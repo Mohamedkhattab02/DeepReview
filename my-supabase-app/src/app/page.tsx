@@ -4,6 +4,8 @@ import { addEmail, deleteEmail } from "./actions";
 import LikeButton from "@/components/LikeButton";
 import { getLikes } from "./actions";
 
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 const TABLE_NAME = "Waitlist2026"; // Supabase Table Name
 

@@ -63,7 +63,7 @@ const LIKES_TABLE = "likes";
 
 export async function getLikes(): Promise<number> {
   const { data, error } = await supabase
-    .from(LIKES_TABLE)
+    .from("likes")
     .select("count")
     .eq("id", 1)
     .single();
@@ -73,8 +73,9 @@ export async function getLikes(): Promise<number> {
     return 0;
   }
 
-  return data.count ?? 0;
+  return data?.count ?? 0;
 }
+
 
 export async function incrementLikes(): Promise<void> {
   const { error } = await supabase.rpc("increment_likes");
