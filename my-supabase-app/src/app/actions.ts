@@ -82,8 +82,5 @@ export async function incrementLikes(): Promise<void> {
 
   if (error) {
     console.error("❌ Increment likes error:", error.message);
-    return;
   }
-
-  revalidatePath("/");
 }
