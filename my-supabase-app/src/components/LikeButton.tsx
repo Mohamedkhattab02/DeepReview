@@ -1,17 +1,18 @@
-// Ilya Zeldner
 "use client";
 
-import { useState } from "react";
+import { useTransition } from "react";
+import { incrementLikes } from "@/app/actions";
 
-export default function LikeButton() {
-  const [likes, setLikes] = useState(0);
+export default function LikeButton({ initialLikes }: { initialLikes: number }) {
+  const [isPending, startTransition] = useTransition();
 
   return (
     <button
-      onClick={() => setLikes(likes + 1)}
-      className="bg-pink-100 text-black p-2 rounded"
+      onClick={() => startTransition(() => incrementLikes())}
+      disabled={isPending}
+      className="bg-pink-100 hover:bg-pink-200 text-black p-2 rounded disabled:opacity-50"
     >
-      ❤️ {likes} Likes
+      ❤️ {initialLikes} Likes
     </button>
   );
 }

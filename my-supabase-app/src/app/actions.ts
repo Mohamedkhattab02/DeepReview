@@ -58,3 +58,31 @@ export async function deleteEmail(id: number): Promise<void> {
 
   revalidatePath("/"); // Refresh the UI
 }
+
+const LIKES_TABLE = "likes";
+
+export async function getLikes(): Promise<number> {
+  const { data, error } = await supabase
+    .from(LIKES_TABLE)
+    .select("count")
+    .eq("id", 1)
+    .single();
+
+  if (error) {
+    console.error("❌ Fetch likes error:", error.message);
+    return 0;
+  }
+
+  return data.count ?? 0;
+}
+
+export async function incrementLikes(): Promise<void> {
+  const { error } = await supabase.rpc("increment_likes");
+
+  if (error) {
+    console.error("❌ Increment likes error:", error.message);
+    return;
+  }
+
+  revalidatePath("/");
+}

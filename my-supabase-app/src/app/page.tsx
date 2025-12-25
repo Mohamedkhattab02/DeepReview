@@ -2,6 +2,8 @@
 import { supabase } from "@/lib/supabase";
 import { addEmail, deleteEmail } from "./actions";
 import LikeButton from "@/components/LikeButton";
+import { getLikes } from "./actions";
+
 
 const TABLE_NAME = "Waitlist2026"; // Supabase Table Name
 
@@ -11,8 +13,11 @@ interface WaitlistEntry {
   created_at: string;
 }
 
+
+
 export default async function Page() {
   // Fetch Data and Count
+  const likes = await getLikes();
   const { data: entries, count } = await supabase
     .from(TABLE_NAME)
     .select("*", { count: "exact" }) // Get exact count
@@ -46,7 +51,8 @@ export default async function Page() {
           <span className="text-[10px] uppercase tracking-widest text-slate-400">
             Interactive
           </span>
-          <LikeButton />
+          <LikeButton initialLikes={likes} />
+
         </div>
       </div>
 
