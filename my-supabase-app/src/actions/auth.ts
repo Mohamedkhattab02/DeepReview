@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+
 // ============================================
 // הרשמה - Sign Up
 // ============================================
@@ -73,6 +74,8 @@ export async function signUp(formData: FormData) {
 // ============================================
 // התחברות - Sign In
 // ============================================
+
+
 export async function signIn(formData: FormData) {
   const supabase = await createClient();
 
@@ -83,36 +86,44 @@ export async function signIn(formData: FormData) {
     return { error: "Email and password are required" };
   }
 
-  try {
-    // התחברות
-    const { error } = await supabase.auth.signInWithPassword({
+  // 1️⃣ התחברות ל-Supabase Auth
+  const { data: authData, error: authError } =
+    await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
-      return { error: error.message };
-    }
-
-    // שליפת התפקיד של המשתמש
-    const { data: userData } = await supabase
-      .from("users")
-      .select("role")
-      .eq("email", email)
-      .single();
-
-    revalidatePath("/", "layout");
-
-    // העברה לפי תפקיד
-    if (userData?.role === "instructor") {
-      redirect("/instructor");
-    } else {
-      redirect("/student");
-    }
-  } catch (error: any) {
-    return { error: error.message || "An error occurred" };
+  if (authError) {
+    return { error: authError.message };
   }
+
+  const userId = authData.user.id; // ← UUID אמיתי
+
+  // 2️⃣ שליפת role מהטבלה users (תואם interface)
+  const { data: user, error: userError } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", userId)       // ✅ תואם User.id
+    .single();
+
+  if (userError) {
+    return { error: userError.message };
+  }
+
+  if (!user) {
+    return { error: "User record not found in users table" };
+  }
+
+  revalidatePath("/", "layout");
+
+  // 3️⃣ redirect – בלי try/catch ❗
+  if (user.role === "instructor") {
+    redirect("/dashboard/instructor");
+  }
+
+  redirect("/dashboard/student");
 }
+
 
 // ============================================
 // התנתקות - Sign Out
