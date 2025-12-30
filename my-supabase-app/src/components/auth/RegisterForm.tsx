@@ -1,27 +1,88 @@
+// src/components/auth/RegisterForm.tsx
 "use client";
 
 import { useState } from "react";
 import { signUp } from "@/actions/auth";
+import ValidatedInput from "@/components/ui/ValidatedInput";
+import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
+import {
+  emailSchema,
+  fullNameSchema,
+  passwordSchema,
+  registerSchema,
+  validateForm,
+} from "@/utils/validation";
 
 export default function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [selectedRole, setSelectedRole] = useState<"student" | "instructor">("student");
+  const [formData, setFormData] = useState({
+    email: "",
+    full_name: "",
+    password: "",
+    confirmPassword: "",
+    role: "student" as "student" | "instructor",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Real-time validation functions
+  const validateEmail = (value: string) => {
+    const result = emailSchema.safeParse(value);
+    return result.success ? null : result.error.issues[0].message;
+  };
+
+  const validateFullName = (value: string) => {
+    const result = fullNameSchema.safeParse(value);
+    return result.success ? null : result.error.issues[0].message;
+  };
+
+  const validatePassword = (value: string) => {
+    const result = passwordSchema.safeParse(value);
+    return result.success ? null : result.error.issues[0].message;
+  };
+
+  const validateConfirmPassword = (value: string) => {
+    if (!value) return "Please confirm your password";
+    if (value !== formData.password) return "Passwords don't match";
+    return null;
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setErrors({});
 
-    const formData = new FormData(e.currentTarget);
+    // Full form validation
+    const validation = validateForm(registerSchema, formData);
 
-    const result = await signUp(formData);
+    if (!validation.success) {
+      setErrors(validation.errors);
+      setLoading(false);
+      return;
+    }
+
+    // Create FormData for server action
+    const formDataObj = new FormData();
+    formDataObj.append("email", formData.email);
+    formDataObj.append("password", formData.password);
+    formDataObj.append("full_name", formData.full_name);
+    formDataObj.append("role", formData.role);
+
+    const result = await signUp(formDataObj);
 
     if (result?.error) {
       setError(result.error);
       setLoading(false);
     }
-    // אם הצליח, redirect קורה אוטומטית
+    // If success, redirect happens automatically
   }
 
   return (
@@ -39,82 +100,95 @@ export default function RegisterForm() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Full Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Full Name
-          </label>
-          <input
-            type="text"
-            name="full_name"
-            required
-            placeholder="John Doe"
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:ring-2 ring-blue-500 outline-none transition"
-          />
-        </div>
+        <ValidatedInput
+          label="Full Name"
+          name="full_name"
+          type="text"
+          required
+          placeholder="John Doe"
+          value={formData.full_name}
+          onChange={handleChange}
+          onValidate={validateFullName}
+          error={errors.full_name}
+        />
 
         {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Email
-          </label>
-          <input
-            type="email"
-            name="email"
-            required
-            placeholder="you@example.com"
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:ring-2 ring-blue-500 outline-none transition"
-          />
-        </div>
+        <ValidatedInput
+          label="Email"
+          name="email"
+          type="email"
+          required
+          placeholder="you@example.com"
+          value={formData.email}
+          onChange={handleChange}
+          onValidate={validateEmail}
+          error={errors.email}
+        />
 
         {/* Password */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Password
-          </label>
-          <input
-            type="password"
+          <ValidatedInput
+            label="Password"
             name="password"
+            type="password"
             required
-            minLength={6}
             placeholder="••••••••"
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:ring-2 ring-blue-500 outline-none transition"
+            value={formData.password}
+            onChange={handleChange}
+            onValidate={validatePassword}
+            error={errors.password}
+            showSuccess={false} // Don't show checkmark for password
           />
-          <p className="text-xs text-gray-500 mt-1">At least 6 characters</p>
+          <PasswordStrengthIndicator password={formData.password} />
         </div>
+
+        {/* Confirm Password */}
+        <ValidatedInput
+          label="Confirm Password"
+          name="confirmPassword"
+          type="password"
+          required
+          placeholder="••••••••"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          onValidate={validateConfirmPassword}
+          error={errors.confirmPassword}
+        />
 
         {/* Role Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-3">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
             I am a...
           </label>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setSelectedRole("student")}
-              className={`p-4 rounded-xl border-2 transition ${
-                selectedRole === "student"
-                  ? "border-blue-500 bg-blue-500/10 text-blue-400"
+              onClick={() => setFormData((prev) => ({ ...prev, role: "student" }))}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                formData.role === "student"
+                  ? "border-blue-500 bg-blue-500/10 text-white"
                   : "border-slate-700 bg-slate-800 text-gray-400 hover:border-slate-600"
               }`}
             >
-              <div className="text-2xl mb-1">🎓</div>
-              <div className="font-bold text-sm">Student</div>
+              <div className="text-2xl mb-2">🎓</div>
+              <div className="font-semibold">Student</div>
             </button>
 
             <button
               type="button"
-              onClick={() => setSelectedRole("instructor")}
-              className={`p-4 rounded-xl border-2 transition ${
-                selectedRole === "instructor"
-                  ? "border-purple-500 bg-purple-500/10 text-purple-400"
+              onClick={() =>
+                setFormData((prev) => ({ ...prev, role: "instructor" }))
+              }
+              className={`p-4 rounded-xl border-2 transition-all ${
+                formData.role === "instructor"
+                  ? "border-blue-500 bg-blue-500/10 text-white"
                   : "border-slate-700 bg-slate-800 text-gray-400 hover:border-slate-600"
               }`}
             >
-              <div className="text-2xl mb-1">👨‍🏫</div>
-              <div className="font-bold text-sm">Instructor</div>
+              <div className="text-2xl mb-2">👨‍🏫</div>
+              <div className="font-semibold">Instructor</div>
             </button>
           </div>
-          <input type="hidden" name="role" value={selectedRole} />
         </div>
 
         {/* Submit Button */}
@@ -123,14 +197,42 @@ export default function RegisterForm() {
           disabled={loading}
           className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition shadow-lg"
         >
-          {loading ? "Creating account..." : "Sign Up"}
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg
+                className="animate-spin h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              Creating account...
+            </span>
+          ) : (
+            "Create Account"
+          )}
         </button>
       </form>
 
       {/* Login Link */}
       <div className="mt-6 text-center text-sm text-gray-400">
         Already have an account?{" "}
-        <a href="/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
+        <a
+          href="/auth/login"
+          className="text-blue-400 hover:text-blue-300 font-medium"
+        >
           Sign in
         </a>
       </div>

@@ -4,6 +4,7 @@
 import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { registerSchema, loginSchema } from "@/utils/validation";
 
 
 // ============================================
@@ -12,64 +13,63 @@ import { redirect } from "next/navigation";
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
 
-  // שליפת נתונים מהטופס
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const full_name = formData.get("full_name") as string;
-  const role = formData.get("role") as "student" | "instructor";
+  const rawData = {
+    email: formData.get("email") as string,
+    password: formData.get("password") as string,
+    confirmPassword: formData.get("password") as string,
+    full_name: formData.get("full_name") as string,
+    role: formData.get("role") as "student" | "instructor",
+  };
 
-  // ולידציה בסיסית
-  if (!email || !password || !full_name || !role) {
-    return { error: "All fields are required" };
+  const validation = registerSchema.safeParse(rawData);
+
+  if (!validation.success) {
+    return { error: validation.error.issues[0].message };
   }
 
-  if (password.length < 6) {
-    return { error: "Password must be at least 6 characters" };
-  }
+  const { email, password, full_name, role } = validation.data;
 
-  try {
-    // 1. יצירת משתמש ב-Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+  // ❗ אין try/catch סביב redirect
+  const { data: authData, error: authError } =
+    await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          full_name,
+          role,
+        },
+      },
     });
 
-    if (authError) {
-      return { error: authError.message };
-    }
-
-    if (!authData.user) {
-      return { error: "Failed to create user" };
-    }
-
-    // 2. הוספה לטבלת users
-    const { error: dbError } = await supabase.from("users").insert([
-      {
-        id: authData.user.id,
-        email,
-        full_name,
-        role,
-      },
-    ]);
-
-    if (dbError) {
-      // אם נכשלה ההוספה לטבלה, נמחק את המשתמש מ-Auth
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      return { error: dbError.message };
-    }
-
-    // 3. הצלחה! נעביר לדשבורד
-    revalidatePath("/", "layout");
-    
-    if (role === "student") {
-      redirect("/student");
-    } else {
-      redirect("/instructor");
-    }
-  } catch (error: any) {
-    return { error: error.message || "An error occurred" };
+  if (authError) {
+    return { error: authError.message };
   }
+
+  if (!authData.user) {
+    return { error: "Failed to create user" };
+  }
+
+  const { error: dbError } = await supabase.from("users").insert([
+    {
+      id: authData.user.id,
+      email,
+      full_name,
+      role,
+    },
+  ]);
+
+  if (dbError) {
+    console.error("DB Insert Error:", dbError);
+    return { error: "Failed to create user profile" };
+  }
+
+  revalidatePath("/", "layout");
+
+  // ✅ חזרה לדף הראשי – זהו
+  redirect("/");
 }
+
 
 // ============================================
 // התחברות - Sign In
@@ -79,45 +79,49 @@ export async function signUp(formData: FormData) {
 export async function signIn(formData: FormData) {
   const supabase = await createClient();
 
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  const rawData = {
+    email: formData.get("email") as string,
+    password: formData.get("password") as string,
+  };
 
-  if (!email || !password) {
-    return { error: "Email and password are required" };
+  // Zod Validation
+  const validation = loginSchema.safeParse(rawData);
+
+  if (!validation.success) {
+    return { error: validation.error.issues[0].message };
   }
 
-  // 1️⃣ התחברות ל-Supabase Auth
-  const { data: authData, error: authError } =
-    await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const { email, password } = validation.data;
 
-  if (authError) {
-    return { error: authError.message };
+  // ❗ אין try/catch סביב redirect
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    return { error: error.message };
   }
 
-  const userId = authData.user.id; // ← UUID אמיתי
+  if (!data.user) {
+    return { error: "Login failed" };
+  }
 
-  // 2️⃣ שליפת role מהטבלה users (תואם interface)
-  const { data: user, error: userError } = await supabase
+  // שליפת role מהטבלה
+  const { data: userData, error: userError } = await supabase
     .from("users")
     .select("role")
-    .eq("id", userId)       // ✅ תואם User.id
+    .eq("id", data.user.id)
     .single();
 
-  if (userError) {
-    return { error: userError.message };
-  }
-
-  if (!user) {
-    return { error: "User record not found in users table" };
+  if (userError || !userData) {
+    return { error: "Failed to fetch user data" };
   }
 
   revalidatePath("/", "layout");
 
-  // 3️⃣ redirect – בלי try/catch ❗
-  if (user.role === "instructor") {
+  // ✅ Redirect לפי role (כמו שביקשת)
+  if (userData.role === "instructor") {
     redirect("/dashboard/instructor");
   }
 
