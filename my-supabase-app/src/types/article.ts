@@ -1,3 +1,5 @@
+import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
+
 export interface Article {
   id: string;
   user_id: string;
@@ -10,4 +12,7 @@ export interface Article {
   publication_year: number | null;
   main_topics: string[];
   analysis_completed: boolean;
+  created_at: string;
+  uploaded_at: string;
+
 }

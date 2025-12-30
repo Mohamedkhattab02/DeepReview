@@ -1,94 +1,136 @@
-// src/components/student/ArticleCard.tsx
-'use client'
+// components/student/ArticleCard.tsx
+"use client";
 
-import { Article } from '@/types/article'
-import { deleteArticle } from '@/actions/articles'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { Article } from "@/types/article";
+import Link from "next/link";
+import { deleteArticle } from "@/actions/articles";
+import { useState } from "react";
 
 interface ArticleCardProps {
-  article: Article
-  showActions?: boolean
+  article: Article;
+  showActions?: boolean;
+  onDelete?: () => void;
 }
 
-export default function ArticleCard({ article, showActions = true }: ArticleCardProps) {
-  const router = useRouter()
-  const [isDeleting, setIsDeleting] = useState(false)
-  
+export default function ArticleCard({
+  article,
+  showActions = false,
+  onDelete,
+}: ArticleCardProps) {
+  const [deleting, setDeleting] = useState(false);
+
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this article?')) return
-    
-    setIsDeleting(true)
+    if (!confirm("Are you sure you want to delete this article?")) return;
+
+    setDeleting(true);
     try {
-      await deleteArticle(article.id)
-    } catch (error) {
-      console.error('Delete failed:', error)
-      alert('Failed to delete article')
-    } finally {
-      setIsDeleting(false)
+      const success = await deleteArticle(article.id);
+
+      if (success) {
+        onDelete?.();
+      } else {
+        alert("Failed to delete article");
+        setDeleting(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete article");
+      setDeleting(false);
     }
-  }
-  
-  const handleChat = () => {
-    router.push(`/student/chat?articleId=${article.id}`)
-  }
-  
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "Unknown date";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {article.title}
-          </h3>
-          <p className="text-sm text-gray-600 mb-2">
-            {article.authors.join(', ')}
-          </p>
-          {article.publication_year && (
-            <p className="text-xs text-gray-500">
-              Published: {article.publication_year}
-            </p>
+    <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-white line-clamp-2">
+              {article.title}
+            </h3>
+
+            {article.authors && article.authors.length > 0 && (
+              <p className="text-blue-100 text-sm mt-1">
+                {article.authors.slice(0, 2).join(", ")}
+                {article.authors.length > 2 &&
+                  ` +${article.authors.length - 2} more`}
+              </p>
+            )}
+          </div>
+
+          {article.analysis_completed ? (
+            <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full ml-2">
+              ✓ Analyzed
+            </span>
+          ) : (
+            <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full ml-2 animate-pulse">
+              ⏳ Processing
+            </span>
           )}
         </div>
-        {article.analysis_completed && (
-          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-            Analyzed
-          </span>
-        )}
       </div>
-      
-      {article.abstract && (
-        <p className="text-sm text-gray-700 mb-4 line-clamp-3">
-          {article.abstract}
-        </p>
-      )}
-      
-      {article.main_topics.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {article.main_topics.slice(0, 3).map((topic, idx) => (
-            <span key={idx} className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded">
-              {topic}
-            </span>
-          ))}
+
+      {/* Content */}
+      <div className="p-4 space-y-3">
+        {/* Abstract */}
+        {article.abstract && (
+          <p className="text-gray-600 text-sm line-clamp-3">
+            {article.abstract}
+          </p>
+        )}
+
+        {/* Topics */}
+        {article.main_topics && article.main_topics.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {article.main_topics.slice(0, 3).map((topic, idx) => (
+              <span
+                key={idx}
+                className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full"
+              >
+                {topic}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Metadata */}
+        <div className="flex items-center gap-4 text-xs text-gray-500 pt-2 border-t">
+          <span>📅 {formatDate(article.uploaded_at)}</span>
+          {article.pages != null && <span>📄 {article.pages} pages</span>}
+          {article.publication_year != null && (
+            <span>📆 {article.publication_year}</span>
+          )}
         </div>
-      )}
-      
-      <div className="flex gap-2 mt-4">
-        <button
-          onClick={handleChat}
-          className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+      </div>
+
+      {/* Actions */}
+      <div className="p-4 bg-gray-50 border-t flex gap-2">
+        <Link
+          href={`/student/chat/${article.id}`}
+          className="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
         >
-          Start Chat
-        </button>
+          💬 Chat
+        </Link>
+
         {showActions && (
           <button
             onClick={handleDelete}
-            disabled={isDeleting}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors disabled:opacity-50"
+            disabled={deleting}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition disabled:opacity-50 text-sm"
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {deleting ? "..." : "🗑️"}
           </button>
         )}
       </div>
     </div>
-  )
+  );
 }

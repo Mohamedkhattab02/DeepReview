@@ -1,105 +1,121 @@
-// src/actions/articles.ts
-'use server'
+// actions/articles.ts
+"use server";
 
-import { createClient } from '@/lib/supabase-server'
-import { revalidatePath } from 'next/cache'
-import { Article } from '@/types/article'
+import { createClient } from "@/lib/supabase-server";
+import { Article } from "@/types/article";
 
-export async function getArticles(): Promise<Article[]> {
-  const supabase = await createClient()
-  
-  const { data, error } = await supabase.from('articles').select('*')
-  .order('created_at', { ascending: false })
-  
-  if (error) throw error
-  return data || []
+// ============================================
+// קבלת כל המאמרים (עם פגינציה)
+// ============================================
+export async function getArticles(
+  limit: number = 6,
+  offset: number = 0
+): Promise<Article[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("articles")
+    .select("*")
+    .order("uploaded_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    console.error("Error fetching articles:", error);
+    return [];
+  }
+
+  return data as Article[];
 }
 
+// ============================================
+// ספירת כל המאמרים
+// ============================================
+export async function getArticlesCount(): Promise<number> {
+  const supabase = await createClient();
+
+  const { count, error } = await supabase
+    .from("articles")
+    .select("*", { count: "exact", head: true });
+
+  if (error) {
+    console.error("Error counting articles:", error);
+    return 0;
+  }
+
+  return count || 0;
+}
+
+// ============================================
+// קבלת מאמרים של המשתמש הנוכחי
+// ============================================
 export async function getMyArticles(): Promise<Article[]> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) throw new Error('Not authenticated')
-  
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
   const { data, error } = await supabase
-    .from('articles')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-  
-  if (error) throw error
-  return data || []
+    .from("articles")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("uploaded_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching my articles:", error);
+    return [];
+  }
+
+  return data as Article[];
 }
 
-export async function getArticleById(id: string): Promise<Article | null> {
-  const supabase = await createClient()
-  
-  const { data, error } = await supabase
-    .from('articles')
-    .select('*')
-    .eq('id', id)
-    .single()
-  
-  if (error) return null
-  return data
-}
+// ============================================
+// מחיקת מאמר
+// ============================================
+export async function deleteArticle(articleId: string): Promise<boolean> {
+  const supabase = await createClient();
 
-export async function uploadArticle(formData: FormData) {
-  const supabase =await  createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) throw new Error('Not authenticated')
-  
-  const file = formData.get('file') as File
-  const title = formData.get('title') as string
-  
-  // Upload to Supabase Storage
-  const filePath = `${user.id}/${Date.now()}_${file.name}`
-  const { error: uploadError } = await supabase.storage
-    .from('articles')
-    .upload(filePath, file)
-  
-  if (uploadError) throw uploadError
-  
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from('articles')
-    .getPublicUrl(filePath)
-  
-  // Create article record
-  const { data, error } = await supabase
-    .from('articles')
-    .insert({
-      user_id: user.id,
-      title,
-      file_url: publicUrl,
-      analysis_completed: false
-    })
-    .select()
-    .single()
-  
-  if (error) throw error
-  
-  revalidatePath('/student')
-  revalidatePath('/student/mylibrary')
-  
-  return data
-}
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export async function deleteArticle(id: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) throw new Error('Not authenticated')
-  
+  if (!user) return false;
+
+  // מחיקה רק אם המאמר שייך למשתמש
   const { error } = await supabase
-    .from('articles')
+    .from("articles")
     .delete()
-    .eq('id', id)
-    .eq('user_id', user.id)
-  
-  if (error) throw error
-  
-  revalidatePath('/student')
-  revalidatePath('/student/mylibrary')
+    .eq("id", articleId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("Error deleting article:", error);
+    return false;
+  }
+
+  return true;
+}
+
+// ============================================
+// קבלת מאמר בודד
+// ============================================
+export async function getArticleById(
+  articleId: string
+): Promise<Article | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("articles")
+    .select("*")
+    .eq("id", articleId)
+    .single();
+
+  if (error) {
+    console.error("Error fetching article:", error);
+    return null;
+  }
+
+  return data as Article;
 }

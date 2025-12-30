@@ -30,4 +30,6 @@ export interface Article {
   publication_year: number | null;
   main_topics: string[];
   analysis_completed: boolean;
+  created_at:Timestamp;
+  uploaded_at:Timestamp;
 }
