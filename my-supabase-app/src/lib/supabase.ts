@@ -33,3 +33,14 @@ export interface Article {
   created_at:Timestamp;
   uploaded_at:Timestamp;
 }
+
+// src/types/message.ts
+
+export interface Message {
+  id: string;
+  article_id: string;
+  user_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string; // ISO timestamp (מה-DB)
+}

@@ -119,3 +119,52 @@ export async function getArticleById(
 
   return data as Article;
 }
+export type ArticleReadPayload = {
+  id: string;
+  title: string | null;
+  abstract: string | null;
+  contentText: string | null;  // הטקסט המלא
+  pdfUrl: string | null;       // אופציונלי: אם יש קישור ל-PDF
+};
+
+export async function getArticleReadPayload(
+  articleId: string
+): Promise<ArticleReadPayload | null> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  // ⚠️ תעדכן את שמות העמודות לפי מה שיש אצלך בטבלה
+  // לדוגמה: אם אין content/full_text/extracted_text - תחליף לשם הנכון.
+  const { data, error } = await supabase
+    .from("articles")
+    .select("id, title, abstract, full_text, keywords , main_topics")
+    .eq("id", articleId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (error || !data) {
+    console.error("Error fetching article read payload:", error);
+    return null;
+  }
+
+  const contentText =
+    (data as any).content ??
+    (data as any).full_text ??
+    (data as any).extracted_text ??
+    null;
+
+  const pdfUrl = (data as any).pdf_url ?? null;
+
+  return {
+    id: data.id,
+    title: (data as any).title ?? null,
+    abstract: (data as any).abstract ?? null,
+    contentText,
+    pdfUrl,
+  };
+}
