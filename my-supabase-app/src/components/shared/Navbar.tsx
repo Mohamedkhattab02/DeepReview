@@ -35,7 +35,7 @@ export default function Navbar({ user }: NavbarProps) {
                   href="/dashboard/student"
                   className="text-gray-600 hover:text-gray-900 font-medium transition"
                 >
-                  Community
+                  DashBoard
                 </Link>
                 <Link
                   href="/dashboard/student/mylibrary"
@@ -114,19 +114,19 @@ export default function Navbar({ user }: NavbarProps) {
             {user.role === "student" && (
               <>
                 <Link
-                  href="/student"
+                  href="/dashboard/student"
                   className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
-                  Community
+                  DashBoard
                 </Link>
                 <Link
-                  href="/student/mylibrary"
+                  href="/dashboard/student/mylibrary"
                   className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
                   My Library
                 </Link>
                 <Link
-                  href="/student/upload"
+                  href="/dashboard/student/upload"
                   className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
                   Upload

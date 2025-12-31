@@ -74,13 +74,13 @@ export default function StudentDashboard() {
         </div>
         <div className="flex gap-3">
           <Link
-            href="/student/mylibrary"
+            href="/dashboard/student/mylibrary"
             className="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-all font-medium shadow-lg flex items-center gap-2"
           >
             📚 My Library
           </Link>
           <Link
-            href="/student/upload"
+            href="/dashboard/student/upload"
             className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all font-bold shadow-lg flex items-center gap-2"
           >
             ➕ Upload Article
