@@ -181,6 +181,14 @@ export default function ArticleCard({
             📖 Read
           </button>
 
+            <Link
+            href={`/dashboard/student/socraticbot/${article.id}`}
+            className="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+          >
+            💬 socraticbot
+          </Link>
+
+
           {showActions && (
             <button
               onClick={handleDelete}

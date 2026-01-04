@@ -71,6 +71,13 @@ export default function Navbar({ user }: NavbarProps) {
                 >
                   Chat
                 </Link>
+
+                 <Link
+                  href="/dashboard/student/socraticbot"
+                  className="text-gray-600 hover:text-gray-900 font-medium transition"
+                >
+                  socraticbot
+                </Link>
               </>
             )}
           </div>
