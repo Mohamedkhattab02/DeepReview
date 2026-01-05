@@ -4,7 +4,7 @@ export interface SocraticMessage {
   id: string;
   article_id: string;
   user_id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   questions_asked: string | null;
   questions_answered: string | null;
   questions_asked_count: number;

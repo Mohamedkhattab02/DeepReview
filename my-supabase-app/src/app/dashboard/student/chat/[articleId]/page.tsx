@@ -29,7 +29,7 @@ console.log("ARTICLE FROM DB:", article);
       {/* Back Button */}
       <div className="mb-4">
         <Link
-          href="/student"
+          href="/dashboard/student"
           className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
         >
           ← Back to Dashboard

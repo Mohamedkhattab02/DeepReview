@@ -11,4 +11,6 @@ export interface StudentProgress {
   strengths: string[] | null;
   weaknesses: string[] | null;
   recommendations: string[] | null;
+  created_at: string;
+  updated_at: string; // 🔧 חשוב – אתה משתמש בזה
 }

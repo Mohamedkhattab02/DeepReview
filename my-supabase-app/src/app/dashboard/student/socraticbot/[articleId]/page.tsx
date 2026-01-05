@@ -75,7 +75,7 @@ export default async function SocraticBotPage({
       <div className="h-[calc(100vh-8rem)] flex flex-col">
         <div className="mb-4">
           <Link
-            href="/student"
+            href="/dashboard/student"
             className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium"
           >
             ← Back to Dashboard
@@ -93,7 +93,7 @@ export default async function SocraticBotPage({
           </p>
           <div className="flex gap-4">
             <Link
-              href="/student"
+              href="/dashboard/student"
               className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium"
             >
               Return to Dashboard
@@ -101,7 +101,7 @@ export default async function SocraticBotPage({
             <form action={async () => {
               'use server'
               await createSocraticSession(articleId);
-              redirect(`/student/socraticbot/${articleId}`);
+              redirect(`/dashboard/student/socraticbot/${articleId}`);
             }}>
               <button
                 type="submit"
@@ -121,7 +121,7 @@ export default async function SocraticBotPage({
       {/* Back Button */}
       <div className="mb-4">
         <Link
-          href="/student"
+          href="/dashboard/student"
           className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium"
         >
           ← Back to Dashboard

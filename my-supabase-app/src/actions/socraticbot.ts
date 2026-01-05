@@ -2,7 +2,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase-server";
-import { SocraticMessage, StudentProgress } from "@/types/socraticMessage";
+import { SocraticMessage } from "@/types/socraticMessage";
+import {  StudentProgress } from "@/types/StudentProgress";
 import { revalidatePath } from "next/cache";
 
 // קבלת סשן סוקרטי נוכחי או יצירת חדש
@@ -66,7 +67,7 @@ export async function createSocraticSession(
     return null;
   }
 
-  revalidatePath(`/student/socraticbot/${articleId}`);
+  revalidatePath(`/dashboard/student/socraticbot/${articleId}`);
   return data as SocraticMessage;
 }
 
