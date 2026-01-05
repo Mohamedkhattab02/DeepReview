@@ -1,9 +1,10 @@
 // src/app/(dashboard)/student/socraticbot/[articleId]/page.tsx
 import { getArticleById } from "@/actions/articles";
-import {getSocraticSession,createSocraticSession,
+import {
+  getSocraticSession,
+  createSocraticSession,
 } from "@/actions/socraticbot";
-//import ChatInterfaceSocratic from "@/components/student/ChatInterfaceSocratic";
-import ChatInterfaceSocratic from "@/components/student/ChatInterfacesocratic"
+import ChatInterfaceSocratic from "@/components/student/ChatInterfacesocratic";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 

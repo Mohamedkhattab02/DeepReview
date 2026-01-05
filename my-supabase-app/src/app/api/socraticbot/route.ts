@@ -5,10 +5,141 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function extractRetrySeconds(msg: string) {
+  const retryMatch = msg.match(/retry in\s+([\d.]+)s/i);
+  return retryMatch ? Math.ceil(Number(retryMatch[1])) : 60;
+}
+
+function isRateLimitError(msg: string) {
+  const m = msg.toLowerCase();
+  return (
+    m.includes("429") || m.includes("quota") || m.includes("too many requests")
+  );
+}
+
+async function generateWithRetry(
+  model: any,
+  prompt: string,
+  maxRetries = 1
+): Promise<string> {
+  let attempt = 0;
+  while (true) {
+    try {
+      const result = await model.generateContent(prompt);
+      return (await result.response).text().trim();
+    } catch (e: any) {
+      const msg = String(e?.message || "");
+      if (attempt < maxRetries && isRateLimitError(msg)) {
+        const retrySeconds = extractRetrySeconds(msg);
+        await sleep(retrySeconds * 1000);
+        attempt++;
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
+// feedback fallback אם אין מכסה
+function fallbackFinalFeedback() {
+  return {
+    comprehensionScore: 70,
+    criticalThinkingScore: 68,
+    qualityScore: 72,
+    strengths: [
+      "Completed the full Socratic flow",
+      "Stayed engaged through all questions",
+      "Provided structured answers",
+      "Showed effort to explain reasoning",
+    ],
+    weaknesses: [
+      "Some answers could include more specific details",
+      "Critical evaluation could be deeper",
+      "More evidence/examples would strengthen arguments",
+    ],
+    recommendations: [
+      "Review the methodology section and summarize it in your own words",
+      "Practice connecting results to real-world implications",
+      "Try to question assumptions/limitations explicitly",
+      "Add 1–2 concrete examples in each answer next time",
+    ],
+    summaryText:
+      "You completed the Socratic session and demonstrated a solid baseline understanding. To improve further, focus on using specific evidence from the paper and adding deeper critical evaluation. Keep practicing structured reasoning and connecting findings to implications.",
+    isFallback: true,
+  };
+}
+
+function clampLevel(level: number) {
+  return Math.max(1, Math.min(5, level));
+}
+
+// הערכת תשובה: נכון/לא נכון + score
+async function gradeAnswer(
+  model: any,
+  article: any,
+  question: string,
+  answer: string
+): Promise<{ isCorrect: boolean; score: number; feedback: string }> {
+  const prompt = `You are an educational grader.
+Given the academic article context, the question, and the student's answer:
+- Decide if the answer is correct enough to be considered "correct".
+- If NOT correct: score must be 0.
+- If correct: give score 1-100 based on accuracy, completeness, and clarity.
+Return ONLY valid JSON:
+{
+  "isCorrect": true,
+  "score": 85,
+  "feedback": "1-2 short sentences feedback"
+}
+
+Article Title: ${article.title}
+Abstract: ${article.abstract || "No abstract"}
+Topics: ${(article.main_topics || []).join(", ") || "Not available"}
+
+Question: ${question}
+Student Answer: ${answer}
+`;
+
+  const text = await generateWithRetry(model, prompt, 1);
+
+  try {
+    const clean = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    const isCorrect = Boolean(parsed.isCorrect);
+    let score = Number(parsed.score);
+
+    if (!isCorrect) score = 0;
+    score = Math.max(0, Math.min(100, isCorrect ? score : 0));
+
+    const feedback = typeof parsed.feedback === "string" ? parsed.feedback : "";
+    return { isCorrect, score, feedback };
+  } catch {
+    return {
+      isCorrect: false,
+      score: 0,
+      feedback:
+        "Could not evaluate your answer reliably. Please try to be more specific.",
+    };
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { articleId, sessionId, userAnswer, currentLevel } =
-      await request.json();
+    // ✅ קוראים JSON פעם אחת בלבד!
+    const body = await request.json();
+    const {
+      articleId,
+      sessionId,
+      userAnswer,
+      currentLevel,
+      questionIndex,
+      currentQuestion, // ✅ מגיע מהלקוח
+    } = body;
 
     if (!articleId || !sessionId) {
       return NextResponse.json(
@@ -18,7 +149,6 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient();
-
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -27,7 +157,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // קבלת המאמר
     const { data: article, error: articleError } = await supabase
       .from("articles")
       .select("*")
@@ -40,151 +169,172 @@ export async function POST(request: NextRequest) {
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    // אם זו השאלה הראשונה - צור שאלה התחלתית
+    // ==================================================
+    // התחלה: שאלה ראשונה ברמת קושי בינונית (3)
+    // ==================================================
     if (!userAnswer) {
-      const prompt = `You are a Socratic teaching bot. Generate the FIRST question (Level 1 of 5) for this academic article.
+      const startLevel = 3;
+      const prompt = `You are a Socratic teaching bot. Generate the FIRST question for this academic article.
+Difficulty Level: ${startLevel} (1=easy, 5=hard)
 
-Article Information:
 Title: ${article.title}
 Authors: ${article.authors?.join(", ") || "Unknown"}
 Abstract: ${article.abstract || "No abstract"}
-Main Topics: ${article.main_topics?.join(", ") || "Not available"}
-Full Text Preview: ${article.full_text?.substring(0, 3000) || "Not available"}
+Topics: ${article.main_topics?.join(", ") || "Not available"}
+Text Preview: ${article.full_text?.substring(0, 3000) || "Not available"}
 
-Guidelines for Level 1 Question:
-- Start with a basic comprehension question about the main idea or purpose
-- Keep it simple and foundational
-- Encourage the student to identify the core research question or goal
-- Example: "What is the main research question this paper aims to answer?"
+Guidelines for difficulty ${startLevel}:
+- Ask a moderately challenging comprehension question
+- Not too basic, not too advanced
+- Encourage explanation, not yes/no
 
-Respond ONLY with the question text, nothing else.`;
+Respond ONLY with the question text.`;
 
-      const result = await model.generateContent(prompt);
-      const question = (await result.response).text().trim();
+      const question = await generateWithRetry(model, prompt, 1);
 
       return NextResponse.json({
         question,
-        level: 1,
+        level: startLevel,
+        questionIndex: 1,
         isCompleted: false,
         feedback: null,
+        answerScore: null,
+        isCorrect: null,
+        averageScore: null,
       });
     }
 
-    // אחרת - הערך את התשובה וצור שאלה הבאה
-    const nextLevel = currentLevel + 1;
-    const isLastQuestion = nextLevel > 5;
+    // ==================================================
+    // אחרי תשובה: ציון + מעלים/מורידים קושי
+    // ==================================================
+    const qIndex = Number(questionIndex ?? 1); // 1..5
+    const difficulty = clampLevel(Number(currentLevel ?? 3)); // 1..5
 
-    if (isLastQuestion) {
-      // זו תשובה לשאלה האחרונה - צור משוב סופי
-      const feedbackPrompt = `You are a Socratic teaching bot. The student has completed all 5 questions about this article.
+    // ✅ חייבים לקבל את השאלה הנוכחית מהלקוח כדי לדרג
+    if (!currentQuestion || typeof currentQuestion !== "string") {
+      return NextResponse.json(
+        { error: "Missing currentQuestion for grading" },
+        { status: 400 }
+      );
+    }
 
-Article: ${article.title}
+    const grading = await gradeAnswer(model, article, currentQuestion, userAnswer);
 
-Provide a comprehensive final feedback that includes:
-1. Overall comprehension assessment (score 1-100)
-2. Critical thinking evaluation (score 1-100)
-3. Answer quality score (score 1-100)
-4. Key strengths (3-4 points)
-5. Areas for improvement (2-3 points)
-6. Specific recommendations for deeper learning (3-4 actionable items)
+    const nextDifficulty = clampLevel(
+      grading.isCorrect ? difficulty + 1 : difficulty - 1
+    );
 
-Format your response as JSON:
-{
-  "comprehensionScore": 85,
-  "criticalThinkingScore": 78,
-  "qualityScore": 82,
-  "strengths": ["strength 1", "strength 2", "strength 3"],
-  "weaknesses": ["weakness 1", "weakness 2"],
-  "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"],
-  "summaryText": "A detailed paragraph summarizing the student's performance and growth areas"
-}`;
+    const nextQuestionIndex = qIndex + 1;
+    const isDone = nextQuestionIndex > 5;
 
-      const result = await model.generateContent(feedbackPrompt);
-      const feedbackText = (await result.response).text().trim();
+    // ==================================================
+    // סיום: averageScore ממוצע 5 ציונים
+    // ==================================================
+    if (isDone) {
+      const { data: sessionData } = await supabase
+        .from("socratic_messages")
+        .select("questions_answered")
+        .eq("id", sessionId)
+        .eq("user_id", user.id)
+        .single();
 
-      let feedback;
+      let scores: number[] = [];
+
       try {
-        const cleanText = feedbackText
-          .replace(/```json\n?/g, "")
-          .replace(/```\n?/g, "")
-          .trim();
-        feedback = JSON.parse(cleanText);
+        if (sessionData?.questions_answered) {
+          const parsed = JSON.parse(sessionData.questions_answered);
+          if (Array.isArray(parsed)) {
+            for (const item of parsed) {
+              if (typeof item === "object" && item && "score" in item) {
+                scores.push(Number((item as any).score) || 0);
+              }
+            }
+          }
+        }
       } catch {
-        feedback = {
-          comprehensionScore: 75,
-          criticalThinkingScore: 75,
-          qualityScore: 75,
-          strengths: ["Engaged with the material", "Completed all questions"],
-          weaknesses: ["Could provide more detailed answers"],
-          recommendations: ["Review the methodology section", "Practice critical analysis"],
-          summaryText: "Good effort in completing the Socratic discussion.",
-        };
+        // ignore
       }
+
+      scores.push(grading.score);
+
+      while (scores.length < 5) scores.push(0);
+      scores = scores.slice(0, 5);
+
+      const avg =
+        Math.round((scores.reduce((a, b) => a + b, 0) / 5) * 100) / 100;
+
+      const finalFeedback = {
+        ...fallbackFinalFeedback(),
+        averageScore: avg,
+        scores,
+        summaryText: `Session complete. Final average score: ${avg}/100. ${fallbackFinalFeedback().summaryText}`,
+      };
 
       return NextResponse.json({
         question: null,
-        level: 6,
+        level: nextDifficulty,
+        questionIndex: 6,
         isCompleted: true,
-        feedback,
+        feedback: finalFeedback,
+        answerScore: grading.score,
+        isCorrect: grading.isCorrect,
+        averageScore: avg,
       });
     }
 
-    // צור שאלה הבאה על בסיס התשובה
-    const prompt = `You are a Socratic teaching bot. Based on the student's answer, generate the NEXT question (Level ${nextLevel} of 5).
+    // ==================================================
+    // שאלה הבאה לפי nextDifficulty
+    // ==================================================
+    const prompt = `You are a Socratic teaching bot. Generate the NEXT question.
+Difficulty Level: ${nextDifficulty} (1=easy, 5=hard)
 
 Article: ${article.title}
-Current Level: ${nextLevel}
+Topics: ${(article.main_topics || []).join(", ") || "Not available"}
 
-Student's Previous Answer: "${userAnswer}"
+Student's previous answer (for context): "${userAnswer}"
 
-Guidelines for Level ${nextLevel}:
-${
-  nextLevel === 2
-    ? "- Focus on methodology and research design\n- Ask about how the research was conducted"
-    : nextLevel === 3
-    ? "- Dive into findings and results\n- Ask about key discoveries and their significance"
-    : nextLevel === 4
-    ? "- Explore implications and applications\n- Ask about real-world impact and limitations"
-    : "- Challenge critical thinking\n- Ask about alternative interpretations or future directions"
-}
+Guidelines for difficulty ${nextDifficulty}:
+- Level 1: simple comprehension
+- Level 2: method/design basics
+- Level 3: findings reasoning
+- Level 4: implications/limitations
+- Level 5: critical thinking, alternatives, future work
 
-First, provide brief feedback on their answer (1-2 sentences), then ask the next question.
+Respond ONLY with the question text.`;
 
-Format:
-Feedback: [Your feedback here]
-Question: [Your next question here]`;
-
-    const result = await model.generateContent(prompt);
-    const responseText = (await result.response).text().trim();
-
-    // פרסור התשובה
-  const feedbackMatch = responseText.match(
-  /Feedback:\s*([\s\S]+?)(?=Question:|$)/
-);
-
-const questionMatch = responseText.match(
-  /Question:\s*([\s\S]+)$/
-);
-
-
-    const feedback = feedbackMatch ? feedbackMatch[1].trim() : null;
-    const question = questionMatch
-      ? questionMatch[1].trim()
-      : responseText.split("\n").pop() || "Please tell me more about your understanding.";
+    const nextQuestion = await generateWithRetry(model, prompt, 1);
 
     return NextResponse.json({
-      question,
-      level: nextLevel,
+      question: nextQuestion,
+      level: nextDifficulty,
+      questionIndex: nextQuestionIndex,
       isCompleted: false,
-      feedback,
+      feedback: grading.feedback,
+      answerScore: grading.score,
+      isCorrect: grading.isCorrect,
+      averageScore: null,
     });
-  } catch (error) {
+  } catch (error: any) {
+    const msg = String(error?.message || "");
     console.error("Socratic bot error:", error);
+
+    if (isRateLimitError(msg)) {
+      const retrySeconds = extractRetrySeconds(msg);
+      return NextResponse.json(
+        {
+          error: "RATE_LIMIT",
+          message: "Rate limit 😅 נסה שוב בעוד כמה שניות",
+          retryAfterSeconds: retrySeconds,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(retrySeconds) },
+        }
+      );
+    }
+
     return NextResponse.json(
-      {
-        error: "Failed to process request",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Failed to process request", details: msg || "Unknown error" },
       { status: 500 }
     );
   }

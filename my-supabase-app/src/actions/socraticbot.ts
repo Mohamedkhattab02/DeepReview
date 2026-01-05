@@ -2,23 +2,18 @@
 "use server";
 
 import { createClient } from "@/lib/supabase-server";
-import { SocraticMessage } from "@/types/socraticMessage";
-import {  StudentProgress } from "@/types/StudentProgress";
 import { revalidatePath } from "next/cache";
+import { SocraticMessage } from "@/types/socraticMessage";
+import { StudentProgress } from "@/types/StudentProgress";
 
-// קבלת סשן סוקרטי נוכחי או יצירת חדש
+// קבלת סשן סוקרטי פעיל (לא הושלם)
 export async function getSocraticSession(
   articleId: string
 ): Promise<SocraticMessage | null> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // חיפוש סשן פעיל (לא הושלם)
   const { data, error } = await supabase
     .from("socratic_messages")
     .select("*")
@@ -27,26 +22,22 @@ export async function getSocraticSession(
     .eq("is_completed", false)
     .order("created_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle(); // ✅ במקום single()
 
-  if (error && error.code !== "PGRST116") {
+  if (error) {
     console.error("Error fetching socratic session:", error);
     return null;
   }
 
-  return data as SocraticMessage | null;
+  return (data as SocraticMessage) ?? null;
 }
 
-// יצירת סשן סוקרטי חדש
+// יצירת סשן חדש
 export async function createSocraticSession(
   articleId: string
 ): Promise<SocraticMessage | null> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -58,6 +49,9 @@ export async function createSocraticSession(
       current_level: 1,
       questions_asked_count: 0,
       questions_answered_count: 0,
+      questions_asked: "[]",
+      questions_answered: "[]",
+      is_completed: false,
     })
     .select()
     .single();
@@ -67,33 +61,39 @@ export async function createSocraticSession(
     return null;
   }
 
-  revalidatePath(`/dashboard/student/socraticbot/${articleId}`);
   return data as SocraticMessage;
 }
 
-// עדכון סשן עם שאלה ותשובה
+// עדכון סשן עם שאלות/תשובות
 export async function updateSocraticSession(
   sessionId: string,
-  questionAsked: string,
-  questionAnswered: string,
+  questionAskedJson: string,
+  questionAnsweredJson: string,
   newLevel: number,
   isCompleted: boolean
 ): Promise<boolean> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
+
+  // אופציונלי: נסה לחשב counts אמיתיים מה-JSON
+  let askedCount = newLevel;
+  let answeredCount = Math.max(0, newLevel - 1);
+
+  try {
+    const askedArr = JSON.parse(questionAskedJson);
+    const ansArr = JSON.parse(questionAnsweredJson);
+    if (Array.isArray(askedArr)) askedCount = askedArr.length;
+    if (Array.isArray(ansArr)) answeredCount = ansArr.length;
+  } catch {}
 
   const { error } = await supabase
     .from("socratic_messages")
     .update({
-      questions_asked: questionAsked,
-      questions_answered: questionAnswered,
-      questions_asked_count: newLevel,
-      questions_answered_count: newLevel - 1,
+      questions_asked: questionAskedJson,
+      questions_answered: questionAnsweredJson,
+      questions_asked_count: askedCount,
+      questions_answered_count: answeredCount,
       current_level: newLevel,
       is_completed: isCompleted,
     })
@@ -105,32 +105,29 @@ export async function updateSocraticSession(
     return false;
   }
 
-  revalidatePath(`/student/socraticbot/*`);
+  // ✅ revalidate רק אחרי mutation אמיתי (וזה נקרא מה-Client אחרי סיום)
+  revalidatePath(`/dashboard/student/socraticbot`);
   return true;
 }
 
 // קבלת התקדמות סטודנט
 export async function getStudentProgress(): Promise<StudentProgress | null> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
     .from("student_progress")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== "PGRST116") {
+  if (error) {
     console.error("Error fetching student progress:", error);
     return null;
   }
 
-  return data as StudentProgress | null;
+  return (data as StudentProgress) ?? null;
 }
 
 // עדכון התקדמות עם ציונים וממצאים
@@ -143,25 +140,79 @@ export async function updateStudentProgressScores(
   recommendations: string[]
 ): Promise<boolean> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
 
-  const { error } = await supabase
+  const { data: existingProgress } = await supabase
     .from("student_progress")
-    .upsert({
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  // ממוצע משוקלל
+  let newComprehension = comprehensionScore;
+  let newCriticalThinking = criticalThinkingScore;
+  let newQuality = qualityScore;
+
+  if (existingProgress) {
+    const weight = 0.4;
+    const oldWeight = 0.6;
+
+    if (existingProgress.overall_comprehension_score != null) {
+      newComprehension =
+        existingProgress.overall_comprehension_score * oldWeight +
+        comprehensionScore * weight;
+    }
+
+    if (existingProgress.critical_thinking_score != null) {
+      newCriticalThinking =
+        existingProgress.critical_thinking_score * oldWeight +
+        criticalThinkingScore * weight;
+    }
+
+    if (existingProgress.average_quality_score != null) {
+      newQuality =
+        existingProgress.average_quality_score * oldWeight +
+        qualityScore * weight;
+    }
+  }
+
+  // איחוד arrays ושמירת עד 5
+  let mergedStrengths = strengths;
+  let mergedWeaknesses = weaknesses;
+  let mergedRecommendations = recommendations;
+
+  if (existingProgress) {
+    if (existingProgress.strengths) {
+      mergedStrengths = [
+        ...new Set([...strengths, ...existingProgress.strengths]),
+      ].slice(0, 5);
+    }
+    if (existingProgress.weaknesses) {
+      mergedWeaknesses = [
+        ...new Set([...weaknesses, ...existingProgress.weaknesses]),
+      ].slice(0, 5);
+    }
+    if (existingProgress.recommendations) {
+      mergedRecommendations = [
+        ...new Set([...recommendations, ...existingProgress.recommendations]),
+      ].slice(0, 5);
+    }
+  }
+
+  const { error } = await supabase.from("student_progress").upsert(
+    {
       user_id: user.id,
-      overall_comprehension_score: comprehensionScore,
-      critical_thinking_score: criticalThinkingScore,
-      average_quality_score: qualityScore,
-      strengths,
-      weaknesses,
-      recommendations,
+      overall_comprehension_score: Math.round(newComprehension * 100) / 100,
+      critical_thinking_score: Math.round(newCriticalThinking * 100) / 100,
+      average_quality_score: Math.round(newQuality * 100) / 100,
+      strengths: mergedStrengths,
+      weaknesses: mergedWeaknesses,
+      recommendations: mergedRecommendations,
       updated_at: new Date().toISOString(),
-    });
+    },
+    { onConflict: "user_id" }
+  );
 
   if (error) {
     console.error("Error updating progress scores:", error);
@@ -171,16 +222,10 @@ export async function updateStudentProgressScores(
   return true;
 }
 
-// קבלת כל הסשנים שהסתיימו עבור מאמר
-export async function getCompletedSessions(
-  articleId: string
-): Promise<SocraticMessage[]> {
+// כל הסשנים שהסתיימו
+export async function getCompletedSessions(articleId: string) {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
