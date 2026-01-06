@@ -54,37 +54,104 @@ function safeParseJsonArray<T = any>(value: any): T[] {
     return [];
   }
 }
+// ======================
+// Final feedback from Gemini (dynamic)
+// ======================
+async function generateFinalFeedback(params: {
+  model: any;
+  article: any;
+  askedArr: string[];     // ["q1","q2",...]
+  answeredArr: any[];     // [{answer, score, isCorrect, difficulty}, ...]
+  averageScore: number;   // avg 0-100
+}): Promise<{
+  comprehensionScore: number;
+  criticalThinkingScore: number;
+  qualityScore: number;
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+  summaryText: string;
+  isFallback: boolean;
+}> {
+  const { model, article, askedArr, answeredArr, averageScore } = params;
 
-// ======================
-// Fallback feedback (אם תרצה להשאיר)
-// ======================
-function fallbackFinalFeedback() {
-  return {
-    comprehensionScore: 70,
-    criticalThinkingScore: 68,
-    qualityScore: 72,
-    strengths: [
-      "Completed the full Socratic flow",
-      "Stayed engaged through all questions",
-      "Provided structured answers",
-      "Showed effort to explain reasoning",
-    ],
-    weaknesses: [
-      "Some answers could include more specific details",
-      "Critical evaluation could be deeper",
-      "More evidence/examples would strengthen arguments",
-    ],
-    recommendations: [
-      "Review the methodology section and summarize it in your own words",
-      "Practice connecting results to real-world implications",
-      "Try to question assumptions/limitations explicitly",
-      "Add 1–2 concrete examples in each answer next time",
-    ],
-    summaryText:
-      "You completed the Socratic session and demonstrated a solid baseline understanding. To improve further, focus on using specific evidence from the paper and adding deeper critical evaluation. Keep practicing structured reasoning and connecting findings to implications.",
-    isFallback: true,
-  };
+  const qaText = askedArr.slice(0, 5).map((q, i) => {
+    const a = answeredArr[i] || {};
+    return `Q${i + 1}: ${q}
+A${i + 1}: ${a.answer ?? "No answer"}
+Score: ${a.score ?? 0}
+Correct: ${a.isCorrect ?? false}
+Difficulty: ${a.difficulty ?? 0}`;
+  }).join("\n\n");
+
+  const prompt = `You are an expert educational evaluator.
+
+Analyze the student's FULL 5-question Socratic session and return ONLY valid JSON (no markdown).
+
+Return EXACTLY this JSON schema:
+{
+  "comprehensionScore": 0,
+  "criticalThinkingScore": 0,
+  "qualityScore": 0,
+  "strengths": ["...", "..."],
+  "weaknesses": ["...", "..."],
+  "recommendations": ["...", "..."],
+  "summaryText": "..."
 }
+
+Rules:
+- Scores must be integers 0-100.
+- Strengths/weaknesses/recommendations should be specific to the student's answers, not generic.
+- summaryText: 3-4 sentences, concise.
+- Use the final averageScore (${averageScore}/100) to calibrate tone.
+
+Article:
+Title: ${article.title}
+Abstract: ${article.abstract || "No abstract"}
+Topics: ${(article.main_topics || []).join(", ") || "Not available"}
+
+Session Q&A:
+${qaText}
+`;
+
+  try {
+    const text = await generateWithRetry(model, prompt, 1);
+    const clean = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    const toInt = (x: any) => {
+      const n = Number(x);
+      if (!Number.isFinite(n)) return 0;
+      return Math.max(0, Math.min(100, Math.round(n)));
+    };
+
+    return {
+      comprehensionScore: toInt(parsed.comprehensionScore),
+      criticalThinkingScore: toInt(parsed.criticalThinkingScore),
+      qualityScore: toInt(parsed.qualityScore),
+
+      strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 6) : [],
+      weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.slice(0, 6) : [],
+      recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.slice(0, 8) : [],
+
+      summaryText: typeof parsed.summaryText === "string" ? parsed.summaryText : "Summary not available.",
+      isFallback: false,
+    };
+  } catch (e) {
+    // אם Gemini נכשל (429/parse וכו') -> fallback קצר
+    return {
+      comprehensionScore: 70,
+      criticalThinkingScore: 68,
+      qualityScore: 72,
+      strengths: ["Completed the Socratic flow"],
+      weaknesses: ["Some answers need more evidence"],
+      recommendations: ["Add concrete examples from the article"],
+      summaryText: "Feedback generation failed due to temporary limits. Try again later.",
+      isFallback: true,
+    };
+  }
+}
+
 
 // ======================
 // Grade Answer (correct + score)
@@ -362,35 +429,49 @@ Respond ONLY with the question text.`;
 // FINISH SESSION (after question 5)
 // =========================================
 if (isDone) {
-  // 1. Extract scores from answeredArr
+  // ✅ 1) scores + avg
   const scores: number[] = answeredArr
     .slice(0, 5)
     .map((x: any) => (Number.isFinite(Number(x?.score)) ? Number(x.score) : 0));
 
   while (scores.length < 5) scores.push(0);
 
-  // 2. Calculate average
-  const avg = Math.round(((scores.reduce((sum, s) => sum + s, 0) / 5) * 100)) / 100;
+  const avg =
+    Math.round((scores.reduce((sum, s) => sum + s, 0) / 5) * 100) / 100;
 
-  // 3. Difficulty path
+  // ✅ 2) difficultyPath
   const difficultyPath: number[] = answeredArr
     .slice(0, 5)
-    .map((x: any) => (Number.isFinite(Number(x?.difficulty)) ? Number(x.difficulty) : 0));
+    .map((x: any) =>
+      Number.isFinite(Number(x?.difficulty)) ? Number(x.difficulty) : 0
+    );
 
   while (difficultyPath.length < 5) difficultyPath.push(0);
 
-  // 4. Fallback feedback
-  const baseFeedback = fallbackFinalFeedback();
+  // ✅ 3) Final feedback from Gemini (dynamic)
+  const finalAnalysis = await generateFinalFeedback({
+    model,
+    article,
+    askedArr,
+    answeredArr,
+    averageScore: avg,
+  });
 
   const finalFeedback = {
-    ...baseFeedback,
     averageScore: avg,
     scores,
     difficultyPath,
-    summaryText: `Session complete. Final average score: ${avg}/100. ${baseFeedback.summaryText}`,
+    comprehensionScore: finalAnalysis.comprehensionScore,
+    criticalThinkingScore: finalAnalysis.criticalThinkingScore,
+    qualityScore: finalAnalysis.qualityScore,
+    strengths: finalAnalysis.strengths,
+    weaknesses: finalAnalysis.weaknesses,
+    recommendations: finalAnalysis.recommendations,
+    summaryText: finalAnalysis.summaryText,
+    isFallback: finalAnalysis.isFallback,
   };
 
-  // 5. ✅ INSERT into student_progress (NEW ROW per session)
+  // ✅ 4) INSERT row to student_progress
   const { error: progressError } = await supabase
     .from("student_progress")
     .insert({
@@ -403,23 +484,19 @@ if (isDone) {
       question_scores: JSON.stringify(scores),
       difficulty_path: JSON.stringify(difficultyPath),
 
-      comprehension_score: baseFeedback.comprehensionScore ?? null,
-      critical_thinking_score: baseFeedback.criticalThinkingScore ?? null,
-      quality_score: baseFeedback.qualityScore ?? null,
+      comprehension_score: finalAnalysis.comprehensionScore ?? null,
+      critical_thinking_score: finalAnalysis.criticalThinkingScore ?? null,
+      quality_score: finalAnalysis.qualityScore ?? null,
 
-      strengths: JSON.stringify(baseFeedback.strengths ?? []),
-      weaknesses: JSON.stringify(baseFeedback.weaknesses ?? []),
-      recommendations: JSON.stringify(baseFeedback.recommendations ?? []),
+      strengths: JSON.stringify(finalAnalysis.strengths ?? []),
+      weaknesses: JSON.stringify(finalAnalysis.weaknesses ?? []),
+      recommendations: JSON.stringify(finalAnalysis.recommendations ?? []),
     });
 
   if (progressError) {
     console.error("❌ student_progress insert failed:", progressError);
-    // Don't throw - still return success to user
-  } else {
-    console.log("✅ student_progress row inserted successfully");
   }
 
-  // 6. Return response to client
   return NextResponse.json({
     question: null,
     level: nextDifficulty,

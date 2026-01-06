@@ -455,7 +455,7 @@ export default function ChatInterfaceSocratic({
                   }
                 }}
                 placeholder="Type your thoughtful answer here... (Shift+Enter for new line)"
-                className="flex-1 px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                className="flex-1 px-4 py-3 rounded-xl resize-none bg-gray-900 text-white border-2 border-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 rows={3}
                 disabled={isLoading || !currentQuestion}
               />
