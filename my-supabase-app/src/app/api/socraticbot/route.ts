@@ -5,6 +5,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
+// ======================
+// Helpers
+// ======================
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -16,16 +19,10 @@ function extractRetrySeconds(msg: string) {
 
 function isRateLimitError(msg: string) {
   const m = msg.toLowerCase();
-  return (
-    m.includes("429") || m.includes("quota") || m.includes("too many requests")
-  );
+  return m.includes("429") || m.includes("quota") || m.includes("too many requests");
 }
 
-async function generateWithRetry(
-  model: any,
-  prompt: string,
-  maxRetries = 1
-): Promise<string> {
+async function generateWithRetry(model: any, prompt: string, maxRetries = 1): Promise<string> {
   let attempt = 0;
   while (true) {
     try {
@@ -44,7 +41,23 @@ async function generateWithRetry(
   }
 }
 
-// feedback fallback אם אין מכסה
+function clampLevel(level: number) {
+  return Math.max(1, Math.min(5, level));
+}
+
+function safeParseJsonArray<T = any>(value: any): T[] {
+  try {
+    if (!value) return [];
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+// ======================
+// Fallback feedback (אם תרצה להשאיר)
+// ======================
 function fallbackFinalFeedback() {
   return {
     comprehensionScore: 70,
@@ -73,11 +86,9 @@ function fallbackFinalFeedback() {
   };
 }
 
-function clampLevel(level: number) {
-  return Math.max(1, Math.min(5, level));
-}
-
-// הערכת תשובה: נכון/לא נכון + score
+// ======================
+// Grade Answer (correct + score)
+// ======================
 async function gradeAnswer(
   model: any,
   article: any,
@@ -85,15 +96,18 @@ async function gradeAnswer(
   answer: string
 ): Promise<{ isCorrect: boolean; score: number; feedback: string }> {
   const prompt = `You are an educational grader.
-Given the academic article context, the question, and the student's answer:
+
+Rules:
 - Decide if the answer is correct enough to be considered "correct".
-- If NOT correct: score must be 0.
-- If correct: give score 1-100 based on accuracy, completeness, and clarity.
-Return ONLY valid JSON:
+- If NOT correct => score MUST be 0.
+- If correct => score 1-100 based on accuracy, completeness, and clarity.
+- Keep feedback short (1-2 sentences).
+
+Return ONLY valid JSON (no markdown):
 {
   "isCorrect": true,
   "score": 85,
-  "feedback": "1-2 short sentences feedback"
+  "feedback": "..."
 }
 
 Article Title: ${article.title}
@@ -114,6 +128,8 @@ Student Answer: ${answer}
     let score = Number(parsed.score);
 
     if (!isCorrect) score = 0;
+    if (!Number.isFinite(score)) score = 0;
+
     score = Math.max(0, Math.min(100, isCorrect ? score : 0));
 
     const feedback = typeof parsed.feedback === "string" ? parsed.feedback : "";
@@ -122,15 +138,17 @@ Student Answer: ${answer}
     return {
       isCorrect: false,
       score: 0,
-      feedback:
-        "Could not evaluate your answer reliably. Please try to be more specific.",
+      feedback: "Could not evaluate reliably. Please be more specific and reference the article.",
     };
   }
 }
 
+// ======================
+// Main Route
+// ======================
 export async function POST(request: NextRequest) {
   try {
-    // ✅ קוראים JSON פעם אחת בלבד!
+    // ✅ קוראים JSON פעם אחת בלבד
     const body = await request.json();
     const {
       articleId,
@@ -138,17 +156,15 @@ export async function POST(request: NextRequest) {
       userAnswer,
       currentLevel,
       questionIndex,
-      currentQuestion, // ✅ מגיע מהלקוח
+      currentQuestion, // ✅ חייב להגיע מהלקוח כשיש תשובה
     } = body;
 
     if (!articleId || !sessionId) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     const supabase = await createClient();
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -167,14 +183,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Article not found" }, { status: 404 });
     }
 
+    // נביא את הסשן (כדי לשמור scores באמת ב-DB ולא לקבל 0 בסוף)
+    const { data: sessionRow, error: sessionErr } = await supabase
+      .from("socratic_messages")
+      .select("id, questions_asked, questions_answered, is_completed")
+      .eq("id", sessionId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (sessionErr || !sessionRow) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    if (sessionRow.is_completed) {
+      return NextResponse.json(
+        { error: "Session already completed" },
+        { status: 400 }
+      );
+    }
+
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    // ==================================================
-    // התחלה: שאלה ראשונה ברמת קושי בינונית (3)
-    // ==================================================
+    // =========================================
+    // 1) FIRST QUESTION (Start at medium = 3)
+    // =========================================
     if (!userAnswer) {
       const startLevel = 3;
-      const prompt = `You are a Socratic teaching bot. Generate the FIRST question for this academic article.
+
+      const prompt = `You are a Socratic teaching bot.
+Generate the FIRST question for this academic article.
+
 Difficulty Level: ${startLevel} (1=easy, 5=hard)
 
 Title: ${article.title}
@@ -183,17 +221,51 @@ Abstract: ${article.abstract || "No abstract"}
 Topics: ${article.main_topics?.join(", ") || "Not available"}
 Text Preview: ${article.full_text?.substring(0, 3000) || "Not available"}
 
-Guidelines for difficulty ${startLevel}:
-- Ask a moderately challenging comprehension question
+Guidelines:
+- Moderately challenging comprehension
 - Not too basic, not too advanced
-- Encourage explanation, not yes/no
+- Encourage explanation (not yes/no)
 
 Respond ONLY with the question text.`;
 
-      const question = await generateWithRetry(model, prompt, 1);
+      let questionText: string;
+      try {
+        questionText = await generateWithRetry(model, prompt, 1);
+      } catch (e: any) {
+        const msg = String(e?.message || "");
+        if (isRateLimitError(msg)) {
+          const retrySeconds = extractRetrySeconds(msg);
+          return NextResponse.json(
+            {
+              error: "RATE_LIMIT",
+              message: "Rate limit 😅 נסה שוב בעוד כמה שניות",
+              retryAfterSeconds: retrySeconds,
+            },
+            { status: 429, headers: { "Retry-After": String(retrySeconds) } }
+          );
+        }
+        throw e;
+      }
+
+      // נשמור DB: questions_asked = [q1], questions_answered=[]
+      const askedArr = [questionText];
+      const answeredArr: any[] = [];
+
+      await supabase
+        .from("socratic_messages")
+        .update({
+          questions_asked: JSON.stringify(askedArr),
+          questions_answered: JSON.stringify(answeredArr),
+          questions_asked_count: 1,
+          questions_answered_count: 0,
+          current_level: startLevel,
+          is_completed: false,
+        })
+        .eq("id", sessionId)
+        .eq("user_id", user.id);
 
       return NextResponse.json({
-        question,
+        question: questionText,
         level: startLevel,
         questionIndex: 1,
         isCompleted: false,
@@ -204,13 +276,12 @@ Respond ONLY with the question text.`;
       });
     }
 
-    // ==================================================
-    // אחרי תשובה: ציון + מעלים/מורידים קושי
-    // ==================================================
+    // =========================================
+    // 2) ANSWER FLOW (grade + update difficulty)
+    // =========================================
     const qIndex = Number(questionIndex ?? 1); // 1..5
     const difficulty = clampLevel(Number(currentLevel ?? 3)); // 1..5
 
-    // ✅ חייבים לקבל את השאלה הנוכחית מהלקוח כדי לדרג
     if (!currentQuestion || typeof currentQuestion !== "string") {
       return NextResponse.json(
         { error: "Missing currentQuestion for grading" },
@@ -218,82 +289,164 @@ Respond ONLY with the question text.`;
       );
     }
 
-    const grading = await gradeAnswer(model, article, currentQuestion, userAnswer);
+    // grade
+    let grading: { isCorrect: boolean; score: number; feedback: string };
+    try {
+      grading = await gradeAnswer(model, article, currentQuestion, String(userAnswer));
+    } catch (e: any) {
+      const msg = String(e?.message || "");
+      if (isRateLimitError(msg)) {
+        const retrySeconds = extractRetrySeconds(msg);
+        return NextResponse.json(
+          {
+            error: "RATE_LIMIT",
+            message: "Rate limit 😅 נסה שוב בעוד כמה שניות",
+            retryAfterSeconds: retrySeconds,
+          },
+          { status: 429, headers: { "Retry-After": String(retrySeconds) } }
+        );
+      }
+      throw e;
+    }
 
-    const nextDifficulty = clampLevel(
-      grading.isCorrect ? difficulty + 1 : difficulty - 1
-    );
-
+    const nextDifficulty = clampLevel(grading.isCorrect ? difficulty + 1 : difficulty - 1);
     const nextQuestionIndex = qIndex + 1;
     const isDone = nextQuestionIndex > 5;
 
-    // ==================================================
-    // סיום: averageScore ממוצע 5 ציונים
-    // ==================================================
-    if (isDone) {
-      const { data: sessionData } = await supabase
-        .from("socratic_messages")
-        .select("questions_answered")
-        .eq("id", sessionId)
-        .eq("user_id", user.id)
-        .single();
+    // =========================================
+    // IMPORTANT FIX:
+    // נשמור *כל* תשובה+ציון ב-DB כדי שהסוף לא יצא 0
+    // questions_answered = [{answer, score, isCorrect, difficulty}, ...]
+    // questions_asked = ["q1","q2",...]
+    // =========================================
+    const askedArr = safeParseJsonArray<string>(sessionRow.questions_asked);
+    const answeredArr = safeParseJsonArray<any>(sessionRow.questions_answered);
 
-      let scores: number[] = [];
-
-      try {
-        if (sessionData?.questions_answered) {
-          const parsed = JSON.parse(sessionData.questions_answered);
-          if (Array.isArray(parsed)) {
-            for (const item of parsed) {
-              if (typeof item === "object" && item && "score" in item) {
-                scores.push(Number((item as any).score) || 0);
-              }
-            }
-          }
-        }
-      } catch {
-        // ignore
-      }
-
-      scores.push(grading.score);
-
-      while (scores.length < 5) scores.push(0);
-      scores = scores.slice(0, 5);
-
-      const avg =
-        Math.round((scores.reduce((a, b) => a + b, 0) / 5) * 100) / 100;
-
-      const finalFeedback = {
-        ...fallbackFinalFeedback(),
-        averageScore: avg,
-        scores,
-        summaryText: `Session complete. Final average score: ${avg}/100. ${fallbackFinalFeedback().summaryText}`,
-      };
-
-      return NextResponse.json({
-        question: null,
-        level: nextDifficulty,
-        questionIndex: 6,
-        isCompleted: true,
-        feedback: finalFeedback,
-        answerScore: grading.score,
-        isCorrect: grading.isCorrect,
-        averageScore: avg,
-      });
+    // ensure we store the current question if missing (למקרה mismatch)
+    if (askedArr.length < qIndex) {
+      askedArr.push(currentQuestion);
+    } else if (askedArr[qIndex - 1] !== currentQuestion) {
+      // אם הלקוח שלח question שונה, נעדכן את המקום הנוכחי
+      askedArr[qIndex - 1] = currentQuestion;
     }
 
-    // ==================================================
-    // שאלה הבאה לפי nextDifficulty
-    // ==================================================
-    const prompt = `You are a Socratic teaching bot. Generate the NEXT question.
+    // push answer object (only once per index)
+    // אם כבר יש תשובה לאותו אינדקס, נחליף (כדי למנוע כפילויות)
+    const answerObj = {
+      answer: String(userAnswer),
+      score: grading.score,
+      isCorrect: grading.isCorrect,
+      difficulty,
+    };
+
+    if (answeredArr.length >= qIndex) {
+      answeredArr[qIndex - 1] = answerObj;
+    } else {
+      answeredArr.push(answerObj);
+    }
+
+    await supabase
+      .from("socratic_messages")
+      .update({
+        questions_asked: JSON.stringify(askedArr),
+        questions_answered: JSON.stringify(answeredArr),
+        questions_asked_count: askedArr.length,
+        questions_answered_count: answeredArr.length,
+        current_level: nextDifficulty,
+        is_completed: isDone,
+      })
+      .eq("id", sessionId)
+      .eq("user_id", user.id);
+
+    // =========================================
+// FINISH SESSION (after question 5)
+// =========================================
+if (isDone) {
+  // 1. Extract scores from answeredArr
+  const scores: number[] = answeredArr
+    .slice(0, 5)
+    .map((x: any) => (Number.isFinite(Number(x?.score)) ? Number(x.score) : 0));
+
+  while (scores.length < 5) scores.push(0);
+
+  // 2. Calculate average
+  const avg = Math.round(((scores.reduce((sum, s) => sum + s, 0) / 5) * 100)) / 100;
+
+  // 3. Difficulty path
+  const difficultyPath: number[] = answeredArr
+    .slice(0, 5)
+    .map((x: any) => (Number.isFinite(Number(x?.difficulty)) ? Number(x.difficulty) : 0));
+
+  while (difficultyPath.length < 5) difficultyPath.push(0);
+
+  // 4. Fallback feedback
+  const baseFeedback = fallbackFinalFeedback();
+
+  const finalFeedback = {
+    ...baseFeedback,
+    averageScore: avg,
+    scores,
+    difficultyPath,
+    summaryText: `Session complete. Final average score: ${avg}/100. ${baseFeedback.summaryText}`,
+  };
+
+  // 5. ✅ INSERT into student_progress (NEW ROW per session)
+  const { error: progressError } = await supabase
+    .from("student_progress")
+    .insert({
+      user_id: user.id,
+      article_id: articleId,
+      session_id: sessionId,
+
+      final_average_score: avg,
+
+      question_scores: JSON.stringify(scores),
+      difficulty_path: JSON.stringify(difficultyPath),
+
+      comprehension_score: baseFeedback.comprehensionScore ?? null,
+      critical_thinking_score: baseFeedback.criticalThinkingScore ?? null,
+      quality_score: baseFeedback.qualityScore ?? null,
+
+      strengths: JSON.stringify(baseFeedback.strengths ?? []),
+      weaknesses: JSON.stringify(baseFeedback.weaknesses ?? []),
+      recommendations: JSON.stringify(baseFeedback.recommendations ?? []),
+    });
+
+  if (progressError) {
+    console.error("❌ student_progress insert failed:", progressError);
+    // Don't throw - still return success to user
+  } else {
+    console.log("✅ student_progress row inserted successfully");
+  }
+
+  // 6. Return response to client
+  return NextResponse.json({
+    question: null,
+    level: nextDifficulty,
+    questionIndex: 6,
+    isCompleted: true,
+    feedback: finalFeedback,
+    answerScore: grading.score,
+    isCorrect: grading.isCorrect,
+    averageScore: avg,
+  });
+}
+
+
+    // =========================================
+    // 4) NEXT QUESTION (by nextDifficulty)
+    // =========================================
+    const nextPrompt = `You are a Socratic teaching bot.
+Generate the NEXT question (Question ${nextQuestionIndex} of 5).
+
 Difficulty Level: ${nextDifficulty} (1=easy, 5=hard)
 
-Article: ${article.title}
+Article Title: ${article.title}
 Topics: ${(article.main_topics || []).join(", ") || "Not available"}
 
-Student's previous answer (for context): "${userAnswer}"
+Student's previous answer (for context): "${String(userAnswer)}"
 
-Guidelines for difficulty ${nextDifficulty}:
+Guidelines by difficulty:
 - Level 1: simple comprehension
 - Level 2: method/design basics
 - Level 3: findings reasoning
@@ -302,14 +455,45 @@ Guidelines for difficulty ${nextDifficulty}:
 
 Respond ONLY with the question text.`;
 
-    const nextQuestion = await generateWithRetry(model, prompt, 1);
+    let nextQuestion: string;
+    try {
+      nextQuestion = await generateWithRetry(model, nextPrompt, 1);
+    } catch (e: any) {
+      const msg = String(e?.message || "");
+      if (isRateLimitError(msg)) {
+        const retrySeconds = extractRetrySeconds(msg);
+        return NextResponse.json(
+          {
+            error: "RATE_LIMIT",
+            message: "Rate limit 😅 נסה שוב בעוד כמה שניות",
+            retryAfterSeconds: retrySeconds,
+          },
+          { status: 429, headers: { "Retry-After": String(retrySeconds) } }
+        );
+      }
+      throw e;
+    }
+
+    // ✅ נשמור גם את השאלה הבאה ל-questions_asked (שלא יתפספס)
+    const askedArr2 = askedArr;
+    if (askedArr2.length < nextQuestionIndex) {
+      askedArr2.push(nextQuestion);
+      await supabase
+        .from("socratic_messages")
+        .update({
+          questions_asked: JSON.stringify(askedArr2),
+          questions_asked_count: askedArr2.length,
+        })
+        .eq("id", sessionId)
+        .eq("user_id", user.id);
+    }
 
     return NextResponse.json({
       question: nextQuestion,
       level: nextDifficulty,
       questionIndex: nextQuestionIndex,
       isCompleted: false,
-      feedback: grading.feedback,
+      feedback: grading.feedback, // feedback קצר על התשובה הקודמת
       answerScore: grading.score,
       isCorrect: grading.isCorrect,
       averageScore: null,
@@ -326,10 +510,7 @@ Respond ONLY with the question text.`;
           message: "Rate limit 😅 נסה שוב בעוד כמה שניות",
           retryAfterSeconds: retrySeconds,
         },
-        {
-          status: 429,
-          headers: { "Retry-After": String(retrySeconds) },
-        }
+        { status: 429, headers: { "Retry-After": String(retrySeconds) } }
       );
     }
 

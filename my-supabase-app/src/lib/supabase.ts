@@ -45,31 +45,53 @@ export interface Message {
   created_at: string; // ISO timestamp (מה-DB)
 }
 
+
 // types/socraticMessage.ts
 export interface SocraticMessage {
   id: string;
   article_id: string;
   user_id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
+
+  // JSON string stored as TEXT
   questions_asked: string | null;
   questions_answered: string | null;
+
   questions_asked_count: number;
   questions_answered_count: number;
+
+  // לפי הטבלה אצלך: 1..6
   current_level: number;
+
   is_completed: boolean;
+
   created_at: string;
+  updated_at?: string; // אם הוספת עמודה
 }
+
+
 // types/StudentProgress.ts
 export interface StudentProgress {
   id: string;
+
   user_id: string;
-  total_articles: number;
-  total_questions_asked: number;
-  total_questions_answered: number;
-  average_quality_score: number | null;
-  overall_comprehension_score: number | null;
+  article_id: string;
+  session_id: string;
+
+  final_average_score: number | null;
+
+  // DB stores these as TEXT (JSON string) אבל בקוד נוח לעבוד כמערכים
+  question_scores: number[];
+  difficulty_path: number[];
+
+  comprehension_score: number | null;
   critical_thinking_score: number | null;
-  strengths: string[] | null;
-  weaknesses: string[] | null;
-  recommendations: string[] | null;
+  quality_score: number | null;
+
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+
+  created_at: string;
+  updated_at: string;
 }

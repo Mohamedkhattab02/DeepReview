@@ -1,16 +1,25 @@
 // types/StudentProgress.ts
 export interface StudentProgress {
   id: string;
+
   user_id: string;
-  total_articles: number;
-  total_questions_asked: number;
-  total_questions_answered: number;
-  average_quality_score: number | null;
-  overall_comprehension_score: number | null;
+  article_id: string;
+  session_id: string;
+
+  final_average_score: number | null;
+
+  // DB stores these as TEXT (JSON string) אבל בקוד נוח לעבוד כמערכים
+  question_scores: number[];
+  difficulty_path: number[];
+
+  comprehension_score: number | null;
   critical_thinking_score: number | null;
-  strengths: string[] | null;
-  weaknesses: string[] | null;
-  recommendations: string[] | null;
+  quality_score: number | null;
+
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+
   created_at: string;
-  updated_at: string; // 🔧 חשוב – אתה משתמש בזה
+  updated_at: string;
 }

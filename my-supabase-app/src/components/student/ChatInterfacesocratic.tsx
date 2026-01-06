@@ -1,27 +1,40 @@
 // src/components/student/ChatInterfaceSocratic.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SocraticMessage } from "@/types/socraticMessage";
-import {
-  updateSocraticSession,
-  updateStudentProgressScores,
-} from "@/actions/socraticbot";
+import { updateSocraticSession } from "@/actions/socraticbot";
 
 interface ChatInterfaceSocraticProps {
   articleId: string;
   articleTitle: string;
   sessionId: string;
-  initialSession: SocraticMessage;
+  initialSession?: SocraticMessage; // לא חובה
 }
 
 interface QAPair {
   question: string;
   answer: string;
-  feedback?: string;      // feedback טקסט קצר מהשרת
-  score?: number | null;  // ✅ ציון לכל תשובה (0-100)
-  isCorrect?: boolean | null; // ✅ נכון/לא נכון
+  feedback?: string; // פידבק קצר (string) מהשרת
+  score?: number | null; // 0-100
+  isCorrect?: boolean | null; // נכון/לא נכון
+  difficulty?: number | null; // הרמה שהשאלה נשאלה בה
 }
+
+type FinalFeedback = {
+  averageScore?: number;
+  scores?: number[];
+  difficultyPath?: number[];
+  summaryText?: string;
+  // אופציונלי אם עדיין מחזיר את אלו
+  comprehensionScore?: number;
+  criticalThinkingScore?: number;
+  qualityScore?: number;
+  strengths?: string[];
+  weaknesses?: string[];
+  recommendations?: string[];
+  isFallback?: boolean;
+};
 
 export default function ChatInterfaceSocratic({
   articleId,
@@ -32,15 +45,19 @@ export default function ChatInterfaceSocratic({
   const [currentQuestion, setCurrentQuestion] = useState<string>("");
   const [userAnswer, setUserAnswer] = useState("");
 
-  // ✅ currentLevel עכשיו = רמת קושי (1..5)
-  const [currentLevel, setCurrentLevel] = useState(3);
+  // currentLevel = רמת קושי (1..5)
+  const [currentLevel, setCurrentLevel] = useState<number>(3);
 
-  // ✅ questionIndex = מספר שאלה מתוך 5 (1..5)
-  const [questionIndex, setQuestionIndex] = useState(1);
+  // questionIndex = מספר השאלה מתוך 5 (1..5)
+  const [questionIndex, setQuestionIndex] = useState<number>(1);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [finalFeedback, setFinalFeedback] = useState<any>(null);
+  const [finalFeedback, setFinalFeedback] = useState<FinalFeedback | null>(null);
+
+  // ✅ נשמור גם בקליינט כדי להציג ולחשב ולשלוח לשרת בסוף (אם תרצה)
+  const [questionScores, setQuestionScores] = useState<number[]>([]);
+  const [difficultyPath, setDifficultyPath] = useState<number[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const didInitRef = useRef(false);
@@ -49,15 +66,26 @@ export default function ChatInterfaceSocratic({
     if (didInitRef.current) return;
     didInitRef.current = true;
 
-    if (!currentQuestion) {
-      loadFirstQuestion();
-    }
+    if (!currentQuestion) loadFirstQuestion();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [qaHistory, currentQuestion, isCompleted]);
+
+  const progressPercentage = useMemo(() => {
+    const idx = Math.min(questionIndex, 5);
+    return (idx / 5) * 100;
+  }, [questionIndex]);
+
+  const averageSoFar = useMemo(() => {
+    if (questionScores.length === 0) return 0;
+    const avg =
+      questionScores.reduce((sum, s) => sum + (typeof s === "number" ? s : 0), 0) /
+      questionScores.length;
+    return Math.round(avg * 100) / 100;
+  }, [questionScores]);
 
   const loadFirstQuestion = async () => {
     setIsLoading(true);
@@ -86,10 +114,17 @@ export default function ChatInterfaceSocratic({
       }
 
       setCurrentQuestion(data.question || "");
-      setCurrentLevel(data.level ?? 3);            // ✅ קושי התחלה (בינוני)
-      setQuestionIndex(data.questionIndex ?? 1);   // ✅ שאלה 1
-    } catch (error) {
-      console.error("Failed to load first question:", error);
+      setCurrentLevel(typeof data.level === "number" ? data.level : 3);
+      setQuestionIndex(typeof data.questionIndex === "number" ? data.questionIndex : 1);
+
+      // התחלה נקייה
+      setQaHistory([]);
+      setQuestionScores([]);
+      setDifficultyPath([typeof data.level === "number" ? data.level : 3]);
+      setIsCompleted(false);
+      setFinalFeedback(null);
+    } catch (err) {
+      console.error("Failed to load first question:", err);
       alert("Failed to start Socratic session");
     } finally {
       setIsLoading(false);
@@ -97,7 +132,7 @@ export default function ChatInterfaceSocratic({
   };
 
   const handleSubmitAnswer = async () => {
-    if (!userAnswer.trim() || isLoading) return;
+    if (!userAnswer.trim() || isLoading || !currentQuestion) return;
 
     const answer = userAnswer.trim();
     setUserAnswer("");
@@ -111,9 +146,9 @@ export default function ChatInterfaceSocratic({
           articleId,
           sessionId,
           userAnswer: answer,
-          currentLevel,      // ✅ קושי נוכחי
-          questionIndex,     // ✅ מספר שאלה
-          currentQuestion,   // ✅ חובה כדי שהשרת ידרג נכונות
+          currentLevel,
+          questionIndex,
+          currentQuestion, // ✅ חובה ל-grading
         }),
       });
 
@@ -128,27 +163,49 @@ export default function ChatInterfaceSocratic({
         return;
       }
 
-      // feedback טקסט קצר (במהלך) — בסיום feedback הוא אובייקט גדול
-      const feedbackText = typeof data.feedback === "string" ? data.feedback : undefined;
+      const answerScore: number | null =
+        typeof data.answerScore === "number" ? data.answerScore : null;
+      const isCorrect: boolean | null =
+        typeof data.isCorrect === "boolean" ? data.isCorrect : null;
+      const feedbackText =
+        typeof data.feedback === "string" ? data.feedback : undefined;
 
-      // ✅ newHistory כדי שהעדכון DB יכלול את האחרונה
+      const askedDifficulty = currentLevel;
+
+      // ✅ history כולל שאלה אחרונה
       const newHistory: QAPair[] = [
         ...qaHistory,
         {
           question: currentQuestion,
           answer,
           feedback: feedbackText,
-          score: data.answerScore ?? null,
-          isCorrect: data.isCorrect ?? null,
+          score: answerScore,
+          isCorrect,
+          difficulty: askedDifficulty,
         },
       ];
       setQaHistory(newHistory);
 
+      // ✅ צבירת ציונים ומסלול קושי
+      if (typeof answerScore === "number") {
+        setQuestionScores((prev) => [...prev, answerScore]);
+      } else {
+        setQuestionScores((prev) => [...prev, 0]);
+      }
+
+      // data.level הוא הקושי הבא (אחרי העלאה/הורדה)
+      const nextLevel = typeof data.level === "number" ? data.level : currentLevel;
+      setDifficultyPath((prev) => {
+        // נשמור את הקושי הבא (לשאלה הבאה), אבל רק אם לא סיימנו
+        if (data.isCompleted) return prev;
+        return [...prev, nextLevel];
+      });
+
       if (data.isCompleted) {
         setIsCompleted(true);
-        setFinalFeedback(data.feedback);
+        setFinalFeedback((data.feedback as FinalFeedback) || null);
 
-        // ✅ שמירת שאלות/תשובות ב-DB
+        // ✅ שמירת שאלות/תשובות ב-DB (כמו אצלך)
         await updateSocraticSession(
           sessionId,
           JSON.stringify(newHistory.map((qa) => qa.question)),
@@ -157,45 +214,34 @@ export default function ChatInterfaceSocratic({
           true
         );
 
-        // ✅ עדכון progress (אם קיים בפידבק הסופי שלך)
-        if (
-          data.feedback &&
-          typeof data.feedback === "object" &&
-          typeof data.feedback.comprehensionScore === "number"
-        ) {
-          await updateStudentProgressScores(
-            data.feedback.comprehensionScore,
-            data.feedback.criticalThinkingScore,
-            data.feedback.qualityScore,
-            data.feedback.strengths || [],
-            data.feedback.weaknesses || [],
-            data.feedback.recommendations || []
-          );
-        }
+        // NOTE:
+        // את העדכון לטבלת student_progress החדשה עושים בשרת/אקשן חדש.
+        // אם כבר יש לך action (למשל createStudentProgressAttempt) – תוסיף פה קריאה אליו.
       } else {
         setCurrentQuestion(data.question || "");
-        setCurrentLevel(data.level ?? currentLevel);                 // ✅ קושי חדש
-        setQuestionIndex(data.questionIndex ?? questionIndex + 1);   // ✅ שאלה חדשה
+        setCurrentLevel(nextLevel);
+        setQuestionIndex(typeof data.questionIndex === "number" ? data.questionIndex : questionIndex + 1);
       }
-    } catch (error) {
-      console.error("Failed to submit answer:", error);
+    } catch (err) {
+      console.error("Failed to submit answer:", err);
       alert("Failed to submit answer");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ✅ התקדמות לפי מספר שאלה (לא לפי קושי)
-  const progressPercentage = (questionIndex / 5) * 100;
-
-  // ✅ ממוצע מהיסטוריה (כולל 0 אם אין score)
-  const averageSoFar =
-    qaHistory.length > 0
-      ? Math.round(
-          (qaHistory.reduce((sum, qa) => sum + (typeof qa.score === "number" ? qa.score : 0), 0) /
-            qaHistory.length) * 100
-        ) / 100
-      : 0;
+  const finalAverageScoreUI = useMemo(() => {
+    // אם השרת מחזיר averageScore בסיום, נעדיף אותו
+    if (finalFeedback && typeof finalFeedback.averageScore === "number") {
+      return finalFeedback.averageScore;
+    }
+    // אחרת נחשב מהקליינט
+    if (questionScores.length === 5) {
+      const avg = questionScores.reduce((a, b) => a + b, 0) / 5;
+      return Math.round(avg * 100) / 100;
+    }
+    return null;
+  }, [finalFeedback, questionScores]);
 
   return (
     <div className="flex flex-col h-full bg-white rounded-xl shadow-lg overflow-hidden">
@@ -205,7 +251,8 @@ export default function ChatInterfaceSocratic({
 
         <div className="flex items-center justify-between mt-2">
           <p className="text-sm text-purple-100">
-            🎓 Socratic Learning • Question {Math.min(questionIndex, 5)} of 5 • Difficulty {currentLevel}/5
+            🎓 Socratic Learning • Question {Math.min(questionIndex, 5)} of 5 • Difficulty{" "}
+            {currentLevel}/5
           </p>
           <div className="bg-white/20 rounded-full px-3 py-1 text-sm font-medium">
             {progressPercentage.toFixed(0)}% Complete
@@ -214,10 +261,7 @@ export default function ChatInterfaceSocratic({
 
         {/* Progress Bar */}
         <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-white transition-all duration-500"
-            style={{ width: `${progressPercentage}%` }}
-          />
+          <div className="h-full bg-white transition-all duration-500" style={{ width: `${progressPercentage}%` }} />
         </div>
 
         {/* Average so far */}
@@ -244,9 +288,16 @@ export default function ChatInterfaceSocratic({
             {/* Question */}
             <div className="flex justify-start">
               <div className="max-w-[85%] bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl px-5 py-4 shadow-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">🎓</span>
-                  <span className="text-xs font-semibold">Question {idx + 1}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🎓</span>
+                    <span className="text-xs font-semibold">Question {idx + 1}</span>
+                  </div>
+                  {typeof qa.difficulty === "number" && (
+                    <span className="text-[11px] bg-white/20 px-2 py-1 rounded-full">
+                      Difficulty {qa.difficulty}/5
+                    </span>
+                  )}
                 </div>
                 <p className="leading-relaxed">{qa.question}</p>
               </div>
@@ -258,7 +309,6 @@ export default function ChatInterfaceSocratic({
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-xs font-semibold">Your Answer:</div>
 
-                  {/* ✅ badge נכון/לא נכון + ציון */}
                   <div className="flex items-center gap-2">
                     {typeof qa.isCorrect === "boolean" && (
                       <span
@@ -312,7 +362,7 @@ export default function ChatInterfaceSocratic({
         )}
 
         {/* Final Feedback */}
-        {isCompleted && finalFeedback && (
+        {isCompleted && (
           <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-6 space-y-4 border-2 border-purple-300">
             <div className="text-center">
               <div className="text-6xl mb-3">🎉</div>
@@ -320,22 +370,19 @@ export default function ChatInterfaceSocratic({
               <p className="text-purple-700">You've completed all 5 questions</p>
             </div>
 
-            {/* ✅ ציון סופי = averageScore שהשרת מחזיר */}
-            {typeof finalFeedback.averageScore === "number" && (
+            {typeof finalAverageScoreUI === "number" && (
               <div className="bg-white rounded-lg p-4 text-center">
-                <div className="text-4xl font-bold text-gray-900">
-                  {finalFeedback.averageScore}
-                </div>
+                <div className="text-4xl font-bold text-gray-900">{finalAverageScoreUI}</div>
                 <div className="text-xs text-gray-600 mt-1">Final Average Score (out of 100)</div>
               </div>
             )}
 
-            {/* (אופציונלי) ציונים מפורטים */}
-            {Array.isArray(finalFeedback.scores) && (
+            {/* Scores per question */}
+            {questionScores.length > 0 && (
               <div className="bg-white rounded-lg p-4">
                 <h4 className="font-semibold text-gray-900 mb-2">Scores per question:</h4>
                 <div className="flex flex-wrap gap-2">
-                  {finalFeedback.scores.map((s: number, i: number) => (
+                  {questionScores.map((s, i) => (
                     <span key={i} className="text-xs bg-gray-100 px-3 py-1 rounded-full">
                       Q{i + 1}: {s}
                     </span>
@@ -344,8 +391,22 @@ export default function ChatInterfaceSocratic({
               </div>
             )}
 
-            {/* שאר הפידבק שלך אם קיים */}
-            {finalFeedback.summaryText && (
+            {/* Difficulty path */}
+            {difficultyPath.length > 0 && (
+              <div className="bg-white rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-2">Difficulty path:</h4>
+                <div className="flex flex-wrap gap-2">
+                  {difficultyPath.map((d, i) => (
+                    <span key={i} className="text-xs bg-gray-100 px-3 py-1 rounded-full">
+                      {i === 0 ? "Start" : `Q${i + 1}`}: {d}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Optional summaryText */}
+            {finalFeedback?.summaryText && (
               <div className="bg-white rounded-lg p-4">
                 <h4 className="font-semibold text-gray-900 mb-2">Summary:</h4>
                 <p className="text-sm text-gray-700 leading-relaxed">{finalFeedback.summaryText}</p>
