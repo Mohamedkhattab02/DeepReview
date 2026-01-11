@@ -1,10 +1,11 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/student/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "DeepReview - Academic Research Assistant",
-  description: "Master research papers with Socratic AI dialogue",
+  description: "Master research papers with Socratic AI dialogue and deep learning insights",
 };
 
 export default function RootLayout({
@@ -13,8 +14,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased">{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -104,6 +104,13 @@ export default function Navbar({ user }: NavbarProps) {
                     {user.role}
                   </p>
                 </div>
+                <Link
+                  href="/dashboard/student/profile"
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-50 transition"
+                >
+                  My Profile
+                </Link>
                 <form action={signOut}>
                   <button
                     type="submit"
@@ -186,6 +193,14 @@ export default function Navbar({ user }: NavbarProps) {
                 </Link>
               </>
             )}
+
+            <Link
+              href="/dashboard/student/profile"
+              className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => setMenuOpen(false)}
+            >
+              My Profile
+            </Link>
 
             <form action={signOut}>
               <button

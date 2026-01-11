@@ -2,14 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
+/* מעבר חלק בין Light / Dark */
+html,
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
