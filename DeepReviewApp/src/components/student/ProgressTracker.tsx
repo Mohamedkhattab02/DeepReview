@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { StudentProgress } from "@/types/StudentProgress";
-import { getArticleProgress, getAllUserProgress } from "@/actions/myprofile";
+import { getArticleProgress, getAllUserProgress } from "@/actions/profile";
 import { CheckCircle, TrendingUp, Award, Target } from "lucide-react";
 
 interface ProgressTrackerProps {
