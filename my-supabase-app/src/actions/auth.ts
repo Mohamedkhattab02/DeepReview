@@ -125,7 +125,7 @@ export async function signIn(formData: FormData) {
     redirect("/dashboard/instructor");
   }
 
-  redirect("/dashboard/student");
+  redirect("/dashboard/student/mylibrary");
 }
 
 

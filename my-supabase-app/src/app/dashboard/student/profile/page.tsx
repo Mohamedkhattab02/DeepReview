@@ -64,13 +64,31 @@ export default function StudentProfilePage() {
   const { user, articles, progressRecords, totalMessages, totalSocraticQuestions } = profileData;
 
   return (
-
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Header - Profile Card */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 h-32" />
           <div className="px-8 pb-8">
-        
+            <div className="flex items-end -mt-16 mb-6">
+              <div className="bg-white rounded-full p-2 shadow-xl">
+                <div className="w-28 h-28 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-4xl font-bold">
+                    {(user.user_metadata?.full_name || user.email || '?').charAt(0)}
+                  </div>
+              </div>
+              <div className="mr-6 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900">{user.user_metadata?.full_name || user.email}</h1>
+                <p className="text-gray-600">{user.email}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  🎓 חבר מאז {new Date(user.created_at).toLocaleDateString('he-IL', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </p>
+              </div>
+            </div>
 
             {/* Tabs */}
             <div className="flex gap-2 border-b border-gray-200">
@@ -139,5 +157,6 @@ export default function StudentProfilePage() {
           />
         )}
       </div>
+    </div>
   );
 }
