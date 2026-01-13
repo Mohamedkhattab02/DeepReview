@@ -36,13 +36,13 @@ export default function ArticleProgressList({
     return (
       <div className="bg-white rounded-xl shadow-lg p-12 text-center">
         <div className="text-7xl mb-6">📚</div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">אין עדיין מאמרים</h3>
-        <p className="text-gray-600 mb-8">התחל ללמוד על ידי העלאת המאמר הראשון שלך!</p>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2"> There are no articles yet</h3>
+        <p className="text-gray-600 mb-8">Start learning by uploading your first article!</p>
         <Link
           href="/dashboard/student/upload"
           className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all font-bold shadow-lg"
         >
-          העלה מאמר ראשון
+          Upload Article
         </Link>
       </div>
     );
@@ -51,9 +51,9 @@ export default function ArticleProgressList({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">המאמרים שלי</h2>
+        <h2 className="text-2xl font-bold text-gray-900">My Articles</h2>
         <span className="text-sm text-gray-600 bg-white px-4 py-2 rounded-full shadow">
-          סה"כ {articles.length} מאמרים
+          Total {articles.length} articles
         </span>
       </div>
 
@@ -94,12 +94,12 @@ export default function ArticleProgressList({
                   {hasProgress ? (
                     <div className="flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full">
                       <CheckCircle size={18} />
-                      <span className="font-semibold">הושלם</span>
+                      <span className="font-semibold">Completed</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-full">
                       <XCircle size={18} />
-                      <span className="font-semibold">בתהליך</span>
+                      <span className="font-semibold">In Progress</span>
                     </div>
                   )}
                 </div>
@@ -123,7 +123,7 @@ export default function ArticleProgressList({
                   <div className="bg-blue-50 rounded-lg p-3 text-center">
                     <div className="flex items-center justify-center gap-2 mb-1">
                       <MessageCircle size={16} className="text-blue-600" />
-                      <span className="text-xs text-blue-600 font-medium">שיחות</span>
+                      <span className="text-xs text-blue-600 font-medium">Messages</span>
                     </div>
                     <p className="text-2xl font-bold text-blue-900">{article.messagesCount}</p>
                   </div>
@@ -131,7 +131,7 @@ export default function ArticleProgressList({
                   <div className="bg-purple-50 rounded-lg p-3 text-center">
                     <div className="flex items-center justify-center gap-2 mb-1">
                       <Brain size={16} className="text-purple-600" />
-                      <span className="text-xs text-purple-600 font-medium">שאלות</span>
+                      <span className="text-xs text-purple-600 font-medium">Questions</span>
                     </div>
                     <p className="text-2xl font-bold text-purple-900">{article.socraticCount}</p>
                   </div>
@@ -141,7 +141,7 @@ export default function ArticleProgressList({
                       <div className="bg-green-50 rounded-lg p-3 text-center">
                         <div className="flex items-center justify-center gap-2 mb-1">
                           <TrendingUp size={16} className="text-green-600" />
-                          <span className="text-xs text-green-600 font-medium">ציון ממוצע</span>
+                          <span className="text-xs text-green-600 font-medium">Average Score</span>
                         </div>
                         <p className="text-2xl font-bold text-green-900">{score}</p>
                       </div>
@@ -149,7 +149,7 @@ export default function ArticleProgressList({
                       <div className="bg-yellow-50 rounded-lg p-3 text-center">
                         <div className="flex items-center justify-center gap-2 mb-1">
                           <BookOpen size={16} className="text-yellow-600" />
-                          <span className="text-xs text-yellow-600 font-medium">רמת קושי</span>
+                          <span className="text-xs text-yellow-600 font-medium">Difficulty Level</span>
                         </div>
                         <p className="text-2xl font-bold text-yellow-900">
                           {article.progress?.difficulty_path[article.progress.difficulty_path.length - 1] || 'N/A'}
@@ -165,7 +165,7 @@ export default function ArticleProgressList({
                     {/* Scores per question */}
                     {article.progress.question_scores.length > 0 && (
                       <div>
-                        <p className="text-sm font-semibold text-gray-700 mb-2">ציונים לפי שאלה:</p>
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Scores per question:</p>
                         <div className="flex flex-wrap gap-2">
                           {article.progress.question_scores.map((score, idx) => (
                             <span
@@ -178,7 +178,7 @@ export default function ArticleProgressList({
                                   : 'bg-yellow-100 text-yellow-700'
                               }`}
                             >
-                              ש{idx + 1}: {score}
+                              Q{idx + 1}: {score}
                             </span>
                           ))}
                         </div>
@@ -189,7 +189,7 @@ export default function ArticleProgressList({
                     <div className="grid md:grid-cols-2 gap-4">
                       {article.progress.strengths.length > 0 && (
                         <div>
-                          <p className="text-sm font-semibold text-green-700 mb-2">💪 חוזקות:</p>
+                          <p className="text-sm font-semibold text-green-700 mb-2">💪 Strengths:</p>
                           <ul className="text-sm text-gray-700 space-y-1">
                             {article.progress.strengths.map((strength, idx) => (
                               <li key={idx} className="flex items-start gap-2">
@@ -203,7 +203,7 @@ export default function ArticleProgressList({
 
                       {article.progress.weaknesses.length > 0 && (
                         <div>
-                          <p className="text-sm font-semibold text-orange-700 mb-2">📌 נקודות לשיפור:</p>
+                          <p className="text-sm font-semibold text-orange-700 mb-2">📌 Weaknesses:</p>
                           <ul className="text-sm text-gray-700 space-y-1">
                             {article.progress.weaknesses.map((weakness, idx) => (
                               <li key={idx} className="flex items-start gap-2">
@@ -219,7 +219,7 @@ export default function ArticleProgressList({
                     {/* Recommendations */}
                     {article.progress.recommendations.length > 0 && (
                       <div className="bg-blue-50 rounded-lg p-4">
-                        <p className="text-sm font-semibold text-blue-900 mb-2">💡 המלצות:</p>
+                        <p className="text-sm font-semibold text-blue-900 mb-2">💡 Recommendations:</p>
                         <ul className="text-sm text-blue-800 space-y-1">
                           {article.progress.recommendations.map((rec, idx) => (
                             <li key={idx} className="flex items-start gap-2">
@@ -232,16 +232,6 @@ export default function ArticleProgressList({
                     )}
                   </div>
                 )}
-
-                {/* Action Button */}
-                <div className="mt-4">
-                  <Link
-                    href={`/dashboard/student/articles/${article.id}`}
-                    className="block w-full text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-semibold shadow-md"
-                  >
-                    {hasProgress ? 'צפה בפרטים המלאים' : 'התחל ללמוד'}
-                  </Link>
-                </div>
               </div>
             </div>
           );

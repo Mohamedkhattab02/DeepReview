@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { Moon, Sun, BookOpen, Brain, TrendingUp, MessageCircle, BarChart3, Target, CheckCircle, Sparkles } from "lucide-react";
+import SignupSuccessToast from "@/components/auth/SignupSuccessToast";
 
 export default function HomePage() {
   const { theme, setTheme } = useTheme();
@@ -16,9 +17,13 @@ export default function HomePage() {
 
   if (!mounted) return null;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-colors">
-      {/* Navigation */}
+return (
+  <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-colors">
+
+    {/* ✅ SUCCESS MESSAGE */}
+    <SignupSuccessToast />
+
+    {/* Navigation */}
       <nav className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           {/* Logo */}

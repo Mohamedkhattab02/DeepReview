@@ -1,7 +1,7 @@
 // src/components/auth/RegisterForm.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signUp } from "@/actions/auth";
 import ValidatedInput from "@/components/ui/ValidatedInput";
 import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
@@ -12,18 +12,25 @@ import {
   registerSchema,
   validateForm,
 } from "@/utils/validation";
+import { generateCaptcha } from "@/lib/captcha";
 
 export default function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
     password: "",
     confirmPassword: "",
-    role: "student" as "student" | "instructor",
+    role: "student",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // ✅ CAPTCHA state
+  const [captchaQuestion, setCaptchaQuestion] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
 
   // Real-time validation functions
   const validateEmail = (value: string) => {
@@ -54,6 +61,18 @@ export default function RegisterForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // ✅ Load/Refresh CAPTCHA
+  async function loadCaptcha() {
+    const c = await generateCaptcha();
+    setCaptchaQuestion(c.question);
+    setCaptchaToken(c.token);
+    setCaptchaAnswer("");
+  }
+
+  useEffect(() => {
+    loadCaptcha();
+  }, []);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -69,18 +88,33 @@ export default function RegisterForm() {
       return;
     }
 
+    // ✅ CAPTCHA basic check (client-side)
+    if (!captchaToken || !captchaAnswer.trim()) {
+      setError("Please solve the CAPTCHA.");
+      setLoading(false);
+      return;
+    }
+
     // Create FormData for server action
     const formDataObj = new FormData();
     formDataObj.append("email", formData.email);
     formDataObj.append("password", formData.password);
+    formDataObj.append("confirmPassword", formData.confirmPassword);
     formDataObj.append("full_name", formData.full_name);
     formDataObj.append("role", formData.role);
+
+    // ✅ Send CAPTCHA to server
+    formDataObj.append("captcha_token", captchaToken);
+    formDataObj.append("captcha_answer", captchaAnswer);
 
     const result = await signUp(formDataObj);
 
     if (result?.error) {
       setError(result.error);
       setLoading(false);
+      // ✅ Refresh CAPTCHA if failed
+      await loadCaptcha();
+      return;
     }
     // If success, redirect happens automatically
   }
@@ -137,7 +171,7 @@ export default function RegisterForm() {
             onChange={handleChange}
             onValidate={validatePassword}
             error={errors.password}
-            showSuccess={false} // Don't show checkmark for password
+            showSuccess={false}
           />
           <PasswordStrengthIndicator password={formData.password} />
         </div>
@@ -155,40 +189,34 @@ export default function RegisterForm() {
           error={errors.confirmPassword}
         />
 
-        {/* Role Selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            I am a...
-          </label>
-          <div className="grid grid-cols-2 gap-3">
+        {/* ✅ CAPTCHA */}
+        <div className="border border-slate-800 rounded-xl p-4 bg-slate-950/40">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-gray-300">
+              CAPTCHA:{" "}
+              <span className="font-semibold text-white">
+                {captchaQuestion || "Loading..."}
+              </span>
+            </p>
             <button
               type="button"
-              onClick={() => setFormData((prev) => ({ ...prev, role: "student" }))}
-              className={`p-4 rounded-xl border-2 transition-all ${
-                formData.role === "student"
-                  ? "border-blue-500 bg-blue-500/10 text-white"
-                  : "border-slate-700 bg-slate-800 text-gray-400 hover:border-slate-600"
-              }`}
+              onClick={loadCaptcha}
+              className="text-xs text-blue-400 hover:text-blue-300"
+              disabled={loading}
             >
-              <div className="text-2xl mb-2">🎓</div>
-              <div className="font-semibold">Student</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setFormData((prev) => ({ ...prev, role: "instructor" }))
-              }
-              className={`p-4 rounded-xl border-2 transition-all ${
-                formData.role === "instructor"
-                  ? "border-blue-500 bg-blue-500/10 text-white"
-                  : "border-slate-700 bg-slate-800 text-gray-400 hover:border-slate-600"
-              }`}
-            >
-              <div className="text-2xl mb-2">👨‍🏫</div>
-              <div className="font-semibold">Instructor</div>
+              Refresh
             </button>
           </div>
+
+          <input
+            value={captchaAnswer}
+            onChange={(e) => setCaptchaAnswer(e.target.value)}
+            placeholder="Your answer"
+            className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            This helps prevent bots from creating accounts.
+          </p>
         </div>
 
         {/* Submit Button */}
@@ -199,11 +227,7 @@ export default function RegisterForm() {
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <svg
-                className="animate-spin h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -229,10 +253,7 @@ export default function RegisterForm() {
       {/* Login Link */}
       <div className="mt-6 text-center text-sm text-gray-400">
         Already have an account?{" "}
-        <a
-          href="/auth/login"
-          className="text-blue-400 hover:text-blue-300 font-medium"
-        >
+        <a href="/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
           Sign in
         </a>
       </div>

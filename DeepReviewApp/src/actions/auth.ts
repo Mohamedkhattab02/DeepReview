@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { registerSchema, loginSchema } from "@/utils/validation";
+import { verifyCaptcha } from "@/lib/captcha"; // ✅ add
+
 
 
 // ============================================
@@ -13,12 +15,22 @@ import { registerSchema, loginSchema } from "@/utils/validation";
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
 
+  // ✅ CAPTCHA fields
+  const captchaToken = (formData.get("captcha_token") as string) || "";
+  const captchaAnswer = (formData.get("captcha_answer") as string) || "";
+
+  const captchaOk = await verifyCaptcha(captchaToken, captchaAnswer);
+  if (!captchaOk) {
+    return { error: "CAPTCHA verification failed. Please try again." };
+  }
+
   const rawData = {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
-    confirmPassword: formData.get("password") as string,
+    // ⚠️ אצלך זה היה בטעות אותו password — מומלץ כך:
+    confirmPassword: formData.get("confirmPassword") as string,
     full_name: formData.get("full_name") as string,
-    role: formData.get("role") as "student" | "instructor",
+    role: "student",
   };
 
   const validation = registerSchema.safeParse(rawData);
@@ -29,34 +41,17 @@ export async function signUp(formData: FormData) {
 
   const { email, password, full_name, role } = validation.data;
 
-  // ❗ אין try/catch סביב redirect
-  const { data: authData, error: authError } =
-    await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name,
-          role,
-        },
-      },
-    });
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name, role } },
+  });
 
-  if (authError) {
-    return { error: authError.message };
-  }
-
-  if (!authData.user) {
-    return { error: "Failed to create user" };
-  }
+  if (authError) return { error: authError.message };
+  if (!authData.user) return { error: "Failed to create user" };
 
   const { error: dbError } = await supabase.from("users").insert([
-    {
-      id: authData.user.id,
-      email,
-      full_name,
-      role,
-    },
+    { id: authData.user.id, email, full_name, role },
   ]);
 
   if (dbError) {
@@ -64,10 +59,10 @@ export async function signUp(formData: FormData) {
     return { error: "Failed to create user profile" };
   }
 
-  revalidatePath("/", "layout");
 
-  // ✅ חזרה לדף הראשי – זהו
-  redirect("/");
+    revalidatePath("/", "layout");
+  redirect("/?signup=success");
+
 }
 
 

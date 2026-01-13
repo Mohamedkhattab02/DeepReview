@@ -64,7 +64,7 @@ export default function StatsOverview({
 
   const stats = [
     {
-      title: "מאמרים שהועלו",
+      title: "Uploaded articles",
       value: totalArticles,
       icon: BookOpen,
       color: "indigo",
@@ -73,7 +73,7 @@ export default function StatsOverview({
       borderColor: "border-indigo-500",
     },
     {
-      title: "סשנים הושלמו",
+      title: "Completed sessions",
       value: completedSessions,
       icon: Target,
       color: "purple",
@@ -82,7 +82,7 @@ export default function StatsOverview({
       borderColor: "border-purple-500",
     },
     {
-      title: "שיחות שנוהלו",
+      title: "Messages sent",
       value: totalMessages,
       icon: MessageCircle,
       color: "pink",
@@ -91,7 +91,7 @@ export default function StatsOverview({
       borderColor: "border-pink-500",
     },
     {
-      title: "שאלות סוקרטיות",
+      title: "Socratic Questions",
       value: totalSocraticQuestions,
       icon: Brain,
       color: "blue",
@@ -100,7 +100,7 @@ export default function StatsOverview({
       borderColor: "border-blue-500",
     },
     {
-      title: "ציון ממוצע",
+      title: "Average Score",
       value: averageScore,
       suffix: "/100",
       icon: TrendingUp,
@@ -110,7 +110,7 @@ export default function StatsOverview({
       borderColor: "border-green-500",
     },
     {
-      title: "ציון הכי גבוה",
+      title: "Highest Score",
       value: highestScore,
       suffix: "/100",
       icon: Award,
@@ -154,13 +154,13 @@ export default function StatsOverview({
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
             <Brain className="text-purple-600" size={24} />
-            ציונים מפורטים
+            Detailed scores
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Comprehension */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">הבנת החומר</span>
+                <span className="text-sm font-medium text-gray-700">Comprehension</span>
                 <span className="text-lg font-bold text-indigo-600">{avgComprehension}/100</span>
               </div>
               <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
@@ -174,7 +174,7 @@ export default function StatsOverview({
             {/* Critical Thinking */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">חשיבה ביקורתית</span>
+                <span className="text-sm font-medium text-gray-700">Critical Thinking</span>
                 <span className="text-lg font-bold text-purple-600">{avgCriticalThinking}/100</span>
               </div>
               <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
@@ -188,7 +188,7 @@ export default function StatsOverview({
             {/* Quality */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">איכות תשובות</span>
+                <span className="text-sm font-medium text-gray-700">Quality</span>
                 <span className="text-lg font-bold text-pink-600">{avgQuality}/100</span>
               </div>
               <div className="h-3 bg-gray-200 rounded-full overflow-hidden">

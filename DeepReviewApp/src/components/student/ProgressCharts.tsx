@@ -13,8 +13,8 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
     return (
       <div className="bg-white rounded-xl shadow-lg p-12 text-center">
         <div className="text-7xl mb-6">📊</div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">אין עדיין נתוני התקדמות</h3>
-        <p className="text-gray-600">השלם סשן סוקרטי כדי לראות את ההתקדמות שלך</p>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">No Progress Data Yet</h3>
+        <p className="text-gray-600">Complete a Socratic session to see your progress</p>
       </div>
     );
   }
@@ -48,25 +48,25 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow-lg p-6 border-r-4 border-blue-500">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-700">ציון ממוצע כללי</h3>
+            <h3 className="font-semibold text-gray-700">Average Score</h3>
             <BarChart3 className="text-blue-600" size={24} />
           </div>
           <p className="text-4xl font-bold text-gray-900">{avgScore}</p>
-          <p className="text-sm text-gray-600 mt-1">מתוך 100</p>
+          <p className="text-sm text-gray-600 mt-1">out of 100</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-6 border-r-4 border-purple-500">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-700">3 הסשנים האחרונים</h3>
+            <h3 className="font-semibold text-gray-700">Last 3 Sessions</h3>
             <Target className="text-purple-600" size={24} />
           </div>
           <p className="text-4xl font-bold text-gray-900">{lastThreeAvg}</p>
-          <p className="text-sm text-gray-600 mt-1">ממוצע</p>
+          <p className="text-sm text-gray-600 mt-1">average</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-6 border-r-4 border-green-500">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-700">מגמה</h3>
+            <h3 className="font-semibold text-gray-700">Trend</h3>
             <TrendingUp className={`${
               trend === 'up' ? 'text-green-600' : 
               trend === 'down' ? 'text-red-600' : 
@@ -78,10 +78,10 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
             trend === 'down' ? 'text-red-600' : 
             'text-gray-600'
           }`}>
-            {trend === 'up' ? '📈 עולה' : trend === 'down' ? '📉 יורדת' : '➡️ יציבה'}
+            {trend === 'up' ? '📈 going up' : trend === 'down' ? '📉 going down' : '➡️ stable'}
           </p>
           <p className="text-sm text-gray-600 mt-1">
-            {trend === 'up' ? 'כל הכבוד!' : trend === 'down' ? 'המשך להשתפר' : 'שמור על הרמה'}
+            {trend === 'up' ? 'Great job!' : trend === 'down' ? 'Keep improving' : 'Maintain your level'}
           </p>
         </div>
       </div>
@@ -90,14 +90,14 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
           <TrendingUp className="text-purple-600" size={24} />
-          גרף התקדמות לאורך זמן
+          Progress Timeline
         </h3>
         
         <div className="space-y-4">
           {sortedRecords.map((record, idx) => {
             const score = record.final_average_score || 0;
             const articleTitle = articleMap.get(record.article_id) || 'Unknown Article';
-            const date = new Date(record.created_at).toLocaleDateString('he-IL', {
+            const date = new Date(record.created_at).toLocaleDateString('EN-IL', {
               month: 'short',
               day: 'numeric',
             });
@@ -141,7 +141,7 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
 
       {/* Detailed Breakdown */}
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">ניתוח מפורט לפי סשן</h3>
+        <h3 className="text-xl font-bold text-gray-900 mb-6">Detailed Breakdown</h3>
         
         <div className="space-y-6">
           {sortedRecords.map((record, idx) => {
@@ -152,10 +152,10 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h4 className="font-bold text-gray-900 mb-1">
-                      סשן #{idx + 1}: {articleTitle}
+                      session #{idx + 1}: {articleTitle}
                     </h4>
                     <p className="text-sm text-gray-600">
-                      {new Date(record.created_at).toLocaleDateString('he-IL', {
+                      {new Date(record.created_at).toLocaleDateString('EN-IL', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
@@ -164,7 +164,7 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
                   </div>
                   <div className="text-center bg-purple-100 rounded-lg px-4 py-2">
                     <p className="text-3xl font-bold text-purple-900">{record.final_average_score || 0}</p>
-                    <p className="text-xs text-purple-700">ציון סופי</p>
+                    <p className="text-xs text-purple-700">Final Score</p>
                   </div>
                 </div>
 
@@ -172,19 +172,19 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   {record.comprehension_score !== null && (
                     <div className="text-center bg-blue-50 rounded-lg p-3">
-                      <p className="text-sm text-blue-700 font-medium mb-1">הבנה</p>
+                      <p className="text-sm text-blue-700 font-medium mb-1">Comprehension</p>
                       <p className="text-2xl font-bold text-blue-900">{record.comprehension_score}</p>
                     </div>
                   )}
                   {record.critical_thinking_score !== null && (
                     <div className="text-center bg-purple-50 rounded-lg p-3">
-                      <p className="text-sm text-purple-700 font-medium mb-1">חשיבה ביקורתית</p>
+                      <p className="text-sm text-purple-700 font-medium mb-1">Critical Thinking</p>
                       <p className="text-2xl font-bold text-purple-900">{record.critical_thinking_score}</p>
                     </div>
                   )}
                   {record.quality_score !== null && (
                     <div className="text-center bg-pink-50 rounded-lg p-3">
-                      <p className="text-sm text-pink-700 font-medium mb-1">איכות</p>
+                      <p className="text-sm text-pink-700 font-medium mb-1">Quality</p>
                       <p className="text-2xl font-bold text-pink-900">{record.quality_score}</p>
                     </div>
                   )}
@@ -193,7 +193,7 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
                 {/* Question Scores */}
                 {record.question_scores.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">ציונים לפי שאלה:</p>
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Scores per question:</p>
                     <div className="flex flex-wrap gap-2">
                       {record.question_scores.map((score, qIdx) => (
                         <span
@@ -206,7 +206,7 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
                               : 'bg-yellow-100 text-yellow-700'
                           }`}
                         >
-                          ש{qIdx + 1}: {score}
+                          q{qIdx + 1}: {score}
                         </span>
                       ))}
                     </div>
@@ -216,12 +216,12 @@ export default function ProgressCharts({ progressRecords, articles }: ProgressCh
                 {/* Difficulty Path */}
                 {record.difficulty_path.length > 0 && (
                   <div>
-                    <p className="text-sm font-semibold text-gray-700 mb-2">מסלול קושי:</p>
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Difficulty Path:</p>
                     <div className="flex items-center gap-2">
                       {record.difficulty_path.map((level, dIdx) => (
                         <div key={dIdx} className="flex items-center">
                           <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">
-                            {dIdx === 0 ? 'התחלה' : `ש${dIdx}`}: רמה {level}
+                            {dIdx === 0 ? 'Beginning' : `Q${dIdx}`}: Level {level}
                           </span>
                           {dIdx < record.difficulty_path.length - 1 && (
                             <span className="text-gray-400 mx-1">→</span>

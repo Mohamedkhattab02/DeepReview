@@ -66,15 +66,15 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
         
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-purple-700">הבנת החומר:</span>
+            <span className="text-purple-700">Understanding of the material:</span>
             <span className="font-bold text-purple-900">{progress.comprehension_score || 'N/A'}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-purple-700">חשיבה ביקורתית:</span>
+            <span className="text-purple-700">Critical Thinking:</span>
             <span className="font-bold text-purple-900">{progress.critical_thinking_score || 'N/A'}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-purple-700">איכות תשובות:</span>
+            <span className="text-purple-700">Quality of Answers:</span>
             <span className="font-bold text-purple-900">{progress.quality_score || 'N/A'}</span>
           </div>
         </div>
@@ -89,12 +89,12 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
         <div className="flex items-center justify-between">
           <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Award className="text-purple-600" size={28} />
-            ההתקדמות שלך במאמר זה
+            Your Progress on This Article
           </h3>
           {progress.final_average_score && (
             <div className="text-center bg-purple-100 rounded-lg px-6 py-3">
               <p className="text-4xl font-bold text-purple-900">{progress.final_average_score}</p>
-              <p className="text-xs text-purple-700 mt-1">ציון סופי</p>
+              <p className="text-xs text-purple-700 mt-1">Final Score</p>
             </div>
           )}
         </div>
@@ -102,7 +102,7 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
         {/* Score Breakdown */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-blue-50 rounded-lg p-4 text-center">
-            <p className="text-sm text-blue-700 font-medium mb-2">הבנת החומר</p>
+            <p className="text-sm text-blue-700 font-medium mb-2">Understanding of the material</p>
             <p className="text-3xl font-bold text-blue-900">{progress.comprehension_score || 'N/A'}</p>
             <div className="mt-2 h-2 bg-blue-200 rounded-full overflow-hidden">
               <div
@@ -113,7 +113,7 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
           </div>
 
           <div className="bg-purple-50 rounded-lg p-4 text-center">
-            <p className="text-sm text-purple-700 font-medium mb-2">חשיבה ביקורתית</p>
+            <p className="text-sm text-purple-700 font-medium mb-2">Critical Thinking</p>
             <p className="text-3xl font-bold text-purple-900">{progress.critical_thinking_score || 'N/A'}</p>
             <div className="mt-2 h-2 bg-purple-200 rounded-full overflow-hidden">
               <div
@@ -124,7 +124,7 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
           </div>
 
           <div className="bg-pink-50 rounded-lg p-4 text-center">
-            <p className="text-sm text-pink-700 font-medium mb-2">איכות תשובות</p>
+            <p className="text-sm text-pink-700 font-medium mb-2">Quality of Answers</p>
             <p className="text-3xl font-bold text-pink-900">{progress.quality_score || 'N/A'}</p>
             <div className="mt-2 h-2 bg-pink-200 rounded-full overflow-hidden">
               <div
@@ -138,7 +138,7 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
         {/* Question Scores */}
         {progress.question_scores.length > 0 && (
           <div>
-            <h4 className="font-semibold text-gray-900 mb-3">ציונים לפי שאלה:</h4>
+            <h4 className="font-semibold text-gray-900 mb-3">Scores by Question:</h4>
             <div className="flex flex-wrap gap-2">
               {progress.question_scores.map((score, idx) => (
                 <div
@@ -161,12 +161,12 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
         {/* Difficulty Path */}
         {progress.difficulty_path.length > 0 && (
           <div>
-            <h4 className="font-semibold text-gray-900 mb-3">מסלול קושי:</h4>
+            <h4 className="font-semibold text-gray-900 mb-3">Difficulty Path:</h4>
             <div className="flex items-center gap-2 flex-wrap">
               {progress.difficulty_path.map((level, idx) => (
                 <div key={idx} className="flex items-center">
                   <span className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg font-medium border-2 border-indigo-300">
-                    {idx === 0 ? 'התחלה' : `שאלה ${idx}`}: רמה {level}
+                    {idx === 0 ? 'Beginning' : `Question ${idx}`}: Level {level}
                   </span>
                   {idx < progress.difficulty_path.length - 1 && (
                     <span className="text-gray-400 mx-2 text-xl">→</span>
@@ -200,7 +200,7 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
             <div className="bg-orange-50 rounded-lg p-4 border-2 border-orange-200">
               <h4 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
                 <Target size={20} />
-                נקודות לשיפור:
+                Weaknesses:
               </h4>
               <ul className="space-y-2">
                 {progress.weaknesses.map((weakness, idx) => (
@@ -219,7 +219,7 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
           <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
             <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
               <TrendingUp size={20} />
-              המלצות להמשך:
+              Recommendations for Further Improvement:
             </h4>
             <ul className="space-y-2">
               {progress.recommendations.map((rec, idx) => (
@@ -247,29 +247,29 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
           <TrendingUp className="text-purple-600" size={24} />
-          סיכום התקדמות כללי
+          Summary of Overall Progress
         </h3>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center bg-purple-100 rounded-lg p-4">
-            <p className="text-sm text-purple-700 mb-1">סשנים</p>
+            <p className="text-sm text-purple-700 mb-1">Articles</p>
             <p className="text-3xl font-bold text-purple-900">{allProgress.length}</p>
           </div>
           
           <div className="text-center bg-blue-100 rounded-lg p-4">
-            <p className="text-sm text-blue-700 mb-1">ציון ממוצע</p>
+            <p className="text-sm text-blue-700 mb-1">Average Score</p>
             <p className="text-3xl font-bold text-blue-900">{avgScore}</p>
           </div>
           
           <div className="text-center bg-green-100 rounded-lg p-4">
-            <p className="text-sm text-green-700 mb-1">הישג הכי גבוה</p>
+            <p className="text-sm text-green-700 mb-1">Highest Achievement</p>
             <p className="text-3xl font-bold text-green-900">
               {Math.max(...allProgress.map(p => p.final_average_score || 0))}
             </p>
           </div>
           
           <div className="text-center bg-pink-100 rounded-lg p-4">
-            <p className="text-sm text-pink-700 mb-1">שאלות נענו</p>
+            <p className="text-sm text-pink-700 mb-1">Questions Answered</p>
             <p className="text-3xl font-bold text-pink-900">
               {allProgress.reduce((sum, p) => sum + p.question_scores.length, 0)}
             </p>
@@ -283,11 +283,11 @@ export default function ProgressTracker({ articleId, showCompact = false }: Prog
   return (
     <div className="bg-white rounded-xl shadow-lg p-8 text-center">
       <div className="text-5xl mb-4">📊</div>
-      <h3 className="text-xl font-bold text-gray-900 mb-2">אין עדיין נתוני התקדמות</h3>
+      <h3 className="text-xl font-bold text-gray-900 mb-2">No Progress Data Yet</h3>
       <p className="text-gray-600">
         {articleId 
-          ? 'התחל סשן סוקרטי כדי לעקוב אחר ההתקדמות שלך'
-          : 'השלם סשן סוקרטי ראשון כדי לראות את ההתקדמות שלך'}
+          ? 'Start a Socratic session to track your progress'
+          : 'Complete your first Socratic session to see your progress'}
       </p>
     </div>
   );

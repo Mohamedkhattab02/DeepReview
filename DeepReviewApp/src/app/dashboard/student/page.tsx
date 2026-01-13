@@ -1,4 +1,4 @@
-// app/(dashboard)/student/profile/page.tsx
+// app/(dashboard)/student/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -47,7 +47,7 @@ export default function StudentProfilePage() {
       <div className="flex justify-center items-center h-screen">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-purple-600 mx-auto"></div>
-          <p className="text-gray-600 font-medium">טוען את הפרופיל שלך...</p>
+          <p className="text-gray-600 font-medium">Loading your profile...</p>
         </div>
       </div>
     );
@@ -56,7 +56,7 @@ export default function StudentProfilePage() {
   if (!profileData) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600">שגיאה בטעינת הפרופיל</p>
+        <p className="text-red-600"> Error loading the profile </p>
       </div>
     );
   }
@@ -82,7 +82,7 @@ export default function StudentProfilePage() {
                     : 'text-gray-600 hover:text-purple-600'
                 }`}
               >
-                📊 סקירה כללית
+                Overview 📊 
               </button>
               <button
                 onClick={() => setSelectedTab('articles')}
@@ -92,7 +92,7 @@ export default function StudentProfilePage() {
                     : 'text-gray-600 hover:text-purple-600'
                 }`}
               >
-                📚 מאמרים
+                Articles 📚 
               </button>
               <button
                 onClick={() => setSelectedTab('progress')}
@@ -102,7 +102,7 @@ export default function StudentProfilePage() {
                     : 'text-gray-600 hover:text-purple-600'
                 }`}
               >
-                📈 התקדמות מפורטת
+               Detailed progress 📈 
               </button>
             </div>
           </div>

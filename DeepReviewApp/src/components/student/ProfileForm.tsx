@@ -23,12 +23,12 @@ export default function ProfileForm({ user }: ProfileFormProps) {
       const result = await updateProfile({ fullName });
       
       if (result.success) {
-        setMessage({ type: "success", text: "הפרופיל עודכן בהצלחה!" });
+        setMessage({ type: "success", text: "The profile has been updated successfully!" });
       } else {
-        setMessage({ type: "error", text: result.error || "אירעה שגיאה בעדכון הפרופיל" });
+        setMessage({ type: "error", text: result.error || "Error updating profile" });
       }
     } catch (error) {
-      setMessage({ type: "error", text: "אירעה שגיאה בלתי צפויה" });
+      setMessage({ type: "error", text: "Unexpected error occurred" });
     } finally {
       setLoading(false);
     }
@@ -38,7 +38,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-          שם מלא
+         full Name
         </label>
         <input
           type="text"
@@ -46,7 +46,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-          placeholder="הזן את שמך המלא"
+          placeholder="Enter your full name"
           required
         />
       </div>
@@ -86,14 +86,14 @@ export default function ProfileForm({ user }: ProfileFormProps) {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              שומר...
+              Saving...
             </>
           ) : (
             <>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              שמור שינויים
+             saving changes
             </>
           )}
         </button>
@@ -103,7 +103,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
           onClick={() => setFullName(user?.full_name || "")}
           className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
         >
-          ביטול
+          Cancel
         </button>
       </div>
     </form>
