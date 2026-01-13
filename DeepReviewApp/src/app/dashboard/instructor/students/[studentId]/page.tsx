@@ -1,20 +1,23 @@
 // src/app/(dashboard)/instructor/students/[studentId]/page.tsx
 import { getStudentProgress, getAllStudents } from "@/actions/instructor";
-import StudentProgress from "@/components/instructor/StudentProgress";
+import StudentDetailView from "@/components/instructor/StudentDetailView";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 export default async function StudentDetailPage({
   params,
 }: {
-  params: { studentId: string };
+  params: Promise<{ studentId: string }>;
 }) {
+  // ✅ Await params first
+  const { studentId } = await params;
+
   const [progress, students] = await Promise.all([
-    getStudentProgress(params.studentId),
+    getStudentProgress(studentId),
     getAllStudents(),
   ]);
 
-  const student = students.find((s) => s.id === params.studentId);
+  const student = students.find((s) => s.id === studentId);
 
   if (!student) {
     notFound();
@@ -35,9 +38,9 @@ export default async function StudentDetailPage({
         <p className="text-gray-600 mt-1">{student.email}</p>
       </div>
 
-      <StudentProgress
+      <StudentDetailView
+        student={student}
         sessions={progress}
-        studentName={student.full_name}
       />
     </div>
   );
