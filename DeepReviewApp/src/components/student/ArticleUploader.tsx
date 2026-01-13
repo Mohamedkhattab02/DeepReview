@@ -93,7 +93,7 @@ export default function ArticleUploader() {
       setTimeout(() => {
         router.push('/dashboard/student/mylibrary')
         router.refresh()
-      }, 1200)
+      }, 120)
 
     } catch (err) {
       console.error(err)

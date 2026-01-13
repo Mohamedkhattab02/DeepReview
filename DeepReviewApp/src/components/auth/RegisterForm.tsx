@@ -251,12 +251,24 @@ export default function RegisterForm() {
       </form>
 
       {/* Login Link */}
-      <div className="mt-6 text-center text-sm text-gray-400">
-        Already have an account?{" "}
-        <a href="/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
-          Sign in
-        </a>
-      </div>
+        <div className="mt-6 text-center text-sm text-gray-400">
+          Already have an account?{" "}
+            <a href="/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
+              Sign in
+           </a>
+          </div>
+
+            {/* 🔙 Back to Home */}
+          <div className="mt-4 text-center">
+            <a
+              href="/"
+              className="inline-block px-5 py-2 rounded-xl border border-slate-700
+                        text-gray-300 hover:text-white hover:border-blue-500
+                        transition"
+            >
+              ← Back to Home
+            </a>
+          </div>
     </div>
   );
 }
