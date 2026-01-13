@@ -1,44 +1,50 @@
-// src/app/(dashboard)/instructor/students/[studentId]/page.tsx
-import { getStudentProgress, getAllStudents } from "@/actions/instructor";
-import StudentDetailView from "@/components/instructor/StudentDetailView";
+// src/app/(dashboard)/student/chat/[articleId]/page.tsx
+import { getArticleById } from "@/actions/articles";
+import { getChatHistory } from "@/actions/chat";
+import ChatInterface from "@/components/student/ChatInterface";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export default async function StudentDetailPage({
+export default async function ChatPage({
   params,
 }: {
-  params: { studentId: string };
+  params: { articleId: string };
 }) {
-  const [progress, students] = await Promise.all([
-    getStudentProgress(params.studentId),
-    getAllStudents(),
-  ]);
+  const { articleId } =await params;
 
-  const student = students.find((s) => s.id === params.studentId);
+  // קבלת המאמר
+  const article = await getArticleById(articleId);
+console.log("ARTICLE ID FROM URL:", articleId);
+console.log("ARTICLE FROM DB:", article);
 
-  if (!student) {
+  if (!article) {
     notFound();
   }
 
+  // קבלת היסטוריית השיחה
+  const chatHistory = await getChatHistory(articleId);
+
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="h-[calc(100vh-8rem)] flex flex-col">
+      {/* Back Button */}
+      <div className="mb-4">
         <Link
-          href="/dashboard/instructor/students"
-          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+          href="/dashboard/student"
+          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
         >
-          ← Back to Students
+          ← Back to Dashboard
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900 mt-4">
-          {student.full_name}
-        </h1>
-        <p className="text-gray-600 mt-1">{student.email}</p>
       </div>
 
-      <StudentDetailView
-        student={student}
-        sessions={progress}
-      />
+      {/* Chat Interface */}
+      <div className="flex-1 min-h-0">
+        <ChatInterface
+          articleId={articleId}
+          articleTitle={article.title}
+          initialMessages={chatHistory}
+        />
+      </div>
     </div>
   );
 }
+
