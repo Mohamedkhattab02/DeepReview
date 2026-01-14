@@ -49,6 +49,13 @@ export default function StudentList({ students }: StudentListProps) {
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      <Link
+        href="/dashboard/instructor"
+        className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition"
+      >
+        ← Back to Dashboard
+      </Link>
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Students</h2>

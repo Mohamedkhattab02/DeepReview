@@ -51,6 +51,14 @@ export default function ArticleManager({ articles }: ArticleManagerProps) {
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+        <a
+          href="/dashboard/instructor"
+          className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition"
+        >
+          ← Back to Dashboard
+        </a>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Article Management</h2>

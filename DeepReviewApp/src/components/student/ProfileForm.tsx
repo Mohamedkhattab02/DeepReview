@@ -35,7 +35,9 @@ export default function ProfileForm({ user }: ProfileFormProps) {
   };
 
   return (
+
     <form onSubmit={handleSubmit} className="space-y-4">
+      
       <div>
         <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
          full Name
@@ -105,7 +107,17 @@ export default function ProfileForm({ user }: ProfileFormProps) {
         >
           Cancel
         </button>
+        {/* Back Button */}
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+          >
+            Back
+          </button>
+
       </div>
     </form>
+
   );
 }

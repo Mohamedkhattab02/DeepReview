@@ -1,15 +1,31 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./actions/**/*.{js,ts,jsx,tsx}",
+    "./lib/**/*.{js,ts,jsx,tsx}",
+
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/actions/**/*.{js,ts,jsx,tsx}",
     "./src/lib/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: "class",
   theme: {
     extend: {
+      /* optional tokens (you can use bg-background, bg-card, etc.) */
+      colors: {
+        background: "rgb(var(--background) / <alpha-value>)",
+        foreground: "rgb(var(--foreground) / <alpha-value>)",
+        card: "rgb(var(--card) / <alpha-value>)",
+        "card-foreground": "rgb(var(--card-foreground) / <alpha-value>)",
+        border: "rgb(var(--border) / <alpha-value>)",
+        muted: "rgb(var(--muted) / <alpha-value>)",
+        "muted-foreground": "rgb(var(--muted-foreground) / <alpha-value>)",
+      },
+
       keyframes: {
         fadeIn: {
           "0%": { opacity: "0", transform: "translateY(10px)" },

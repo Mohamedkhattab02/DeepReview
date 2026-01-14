@@ -10,12 +10,10 @@ export default async function DashboardLayout({
 }) {
   const user = await getCurrentUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-slate-950 dark:text-slate-100">
       <Navbar user={user} />
       <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
     </div>

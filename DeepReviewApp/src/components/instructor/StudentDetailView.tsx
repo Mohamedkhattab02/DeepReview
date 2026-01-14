@@ -282,7 +282,7 @@ export default function StudentDetailView({
         {selectedSession && (
           <div className="space-y-6">
             {/* Article Info */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-blue-400 to-purple-300 rounded-lg p-4">
               <h4 className="font-bold text-gray-900 mb-2">
                 {selectedSession.articles?.title || "Unknown Article"}
               </h4>
@@ -338,7 +338,7 @@ export default function StudentDetailView({
                 {selectedSession.question_scores.map((score, i) => (
                   <div
                     key={i}
-                    className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 text-center border-2 border-gray-200"
+                    className="bg-gradient-to-br from-purple-300 to-blue-300 rounded-lg p-4 text-center border-2 border-gray-200"
                   >
                     <div className="text-2xl font-bold text-gray-900">{score}</div>
                     <div className="text-xs text-gray-500 mt-1">Question {i + 1}</div>
