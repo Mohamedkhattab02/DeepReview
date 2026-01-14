@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Message } from "@/types/message";
 import { saveMessage, clearChatHistory } from "@/actions/chat";
+import { ar } from "zod/locales";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -81,7 +82,7 @@ export default function ChatInterface({
       const savedUserMessage = await saveMessage(articleId, "user", userMessageContent);
       
       if (!savedUserMessage) {
-        throw new Error("שגיאה בשמירת ההודעה");
+        throw new Error("error saving user message");
       }
 
       // 2️⃣ שלח ל-API לקבלת תשובת AI
@@ -101,14 +102,14 @@ export default function ChatInterface({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.userFriendlyMessage || "שגיאה בקבלת תשובה");
+        throw new Error(data.userFriendlyMessage || "error receiving response");
       }
 
       // 3️⃣ שמור תשובת AI ב-DB
       const savedAssistantMessage = await saveMessage(articleId, "assistant", data.message);
       
       if (!savedAssistantMessage) {
-        throw new Error("שגיאה בשמירת התשובה");
+        throw new Error("error saving assistant message");
       }
 
       // 4️⃣ הצג תשובת AI בממשק
@@ -145,7 +146,7 @@ export default function ChatInterface({
 
   // 🗑️ Clear chat history
   const clearHistory = async () => {
-    if (!confirm("האם אתה בטוח שברצונך למחוק את כל ההיסטוריה? פעולה זו בלתי הפיכה.")) {
+    if (!confirm("Are you sure you want to clear the chat history? This action cannot be undone.")) {
       return;
     }
 
@@ -158,7 +159,7 @@ export default function ChatInterface({
       if (success) {
         setMessages([]);
       } else {
-        throw new Error("שגיאה במחיקת ההיסטוריה");
+        throw new Error("error clearing history");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "שגיאה במחיקת ההיסטוריה";
@@ -180,7 +181,7 @@ export default function ChatInterface({
           <div className="flex-1">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Sparkles className="w-5 h-5 animate-pulse" />
-              שיחה אקדמית חכמה
+              Academic Chat
             </h2>
             <p className="text-sm text-blue-100 mt-0.5 line-clamp-1">
               {articleTitle}
@@ -191,7 +192,7 @@ export default function ChatInterface({
               onClick={clearHistory}
               disabled={isClearing}
               className="bg-white/10 hover:bg-white/20 backdrop-blur-sm p-2 rounded-xl transition-all disabled:opacity-50"
-              title="מחק היסטוריה"
+              title="Clear Chat History"
             >
               {isClearing ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -210,20 +211,20 @@ export default function ChatInterface({
             <div className="bg-gradient-to-br from-blue-100 to-purple-100 p-8 rounded-3xl shadow-lg max-w-md">
               <Sparkles className="w-16 h-16 text-indigo-600 mx-auto mb-4 animate-bounce" />
               <h3 className="text-2xl font-bold text-slate-800 mb-3">
-                👋 שלום! אני כאן לעזור
+                👋 hello! I'm your academic assistant.
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                שאל אותי <span className="font-semibold text-indigo-600">כל שאלה</span> על המאמר
-                ואני אסביר לך בצורה <span className="font-semibold text-purple-600">ברורה ומקצועית</span> 🚀
+                Ask me <span className="font-semibold text-indigo-600">any question</span> about the article
+                and I'll explain it in a <span className="font-semibold text-purple-600">clear and professional</span> way 🚀
               </p>
               <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
                 <div className="bg-white/70 backdrop-blur-sm px-4 py-3 rounded-xl shadow-sm">
                   <span className="text-2xl mb-1 block">🔍</span>
-                  <span className="text-slate-700 font-medium">ניתוח מעמיק</span>
+                  <span className="text-slate-700 font-medium">Deep Analysis</span>
                 </div>
                 <div className="bg-white/70 backdrop-blur-sm px-4 py-3 rounded-xl shadow-sm">
                   <span className="text-2xl mb-1 block">💡</span>
-                  <span className="text-slate-700 font-medium">הסברים פשוטים</span>
+                  <span className="text-slate-700 font-medium">Simple Explanations</span>
                 </div>
               </div>
             </div>
@@ -343,7 +344,7 @@ export default function ChatInterface({
                   <div className="w-2.5 h-2.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
                 <span className="text-sm text-slate-600 font-medium">
-                  מנתח את השאלה...
+                 analyzing your question...
                 </span>
               </div>
             </div>
@@ -381,7 +382,7 @@ export default function ChatInterface({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="💭 שאל שאלה על המאמר..."
+              placeholder="💭 Ask a question about the article..."
               className="w-full resize-none rounded-2xl border-2 border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 px-5 py-4 text-slate-800 placeholder-slate-400 transition-all duration-200 shadow-sm"
               rows={1}
               disabled={isLoading}
@@ -397,11 +398,11 @@ export default function ChatInterface({
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>שולח...</span>
+                <span>sending...</span>
               </>
             ) : (
               <>
-                <span>שלח</span>
+                <span>send</span>
                 <Send className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </>
             )}
@@ -409,7 +410,7 @@ export default function ChatInterface({
         </div>
 
         <p className="text-xs text-slate-500 mt-3 text-center">
-          💡 <span className="font-medium">טיפ:</span> שאל שאלות ספציפיות לקבלת תשובות מדויקות יותר
+          💡 <span className="font-medium">Tip:</span> Ask specific questions for more accurate answers
         </p>
       </div>
 

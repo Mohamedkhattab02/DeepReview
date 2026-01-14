@@ -34,12 +34,7 @@ export default async function SocraticBotPage({
           This article is still being analyzed by AI. Please wait a few moments
           and refresh the page.
         </p>
-        <Link
-          href="/student"
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Return to Dashboard
-        </Link>
+        
       </div>
     );
   }
@@ -59,12 +54,6 @@ export default async function SocraticBotPage({
           <p className="text-gray-600">
             Unable to start Socratic session. Please try again.
           </p>
-          <Link
-            href="/student"
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Return to Dashboard
-          </Link>
         </div>
       );
     }
@@ -74,14 +63,6 @@ export default async function SocraticBotPage({
   if (session.is_completed) {
     return (
       <div className="h-[calc(100vh-8rem)] flex flex-col">
-        <div className="mb-4">
-          <Link
-            href="/dashboard/student"
-            className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
 
         <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-12 space-y-6">
           <div className="text-8xl">🎓</div>
@@ -93,12 +74,6 @@ export default async function SocraticBotPage({
             article. Would you like to start a new one?
           </p>
           <div className="flex gap-4">
-            <Link
-              href="/dashboard/student"
-              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium"
-            >
-              Return to Dashboard
-            </Link>
             <form action={async () => {
               'use server'
               await createSocraticSession(articleId);
@@ -119,15 +94,6 @@ export default async function SocraticBotPage({
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col">
-      {/* Back Button */}
-      <div className="mb-4">
-        <Link
-          href="/dashboard/student"
-          className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium"
-        >
-          ← Back to Dashboard
-        </Link>
-      </div>
 
       {/* Chat Interface */}
       <div className="flex-1 min-h-0">
