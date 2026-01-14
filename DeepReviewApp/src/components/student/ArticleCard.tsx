@@ -5,6 +5,7 @@ import { Article } from "@/types/article";
 import Link from "next/link";
 import { deleteArticle, getArticleReadPayload, type ArticleReadPayload } from "@/actions/articles";
 import { useState } from "react";
+import ExportButton from "../shared/ExportButton";
 
 interface ArticleCardProps {
   article: Article;
@@ -246,7 +247,15 @@ export default function ArticleCard({
                   {showAbstract ? "Hide Abstract" : "Show Abstract"}
                 </button>
               </div>
-
+                <ExportButton
+                  type="abstract"
+                  data={{
+                    title: article.title,
+                    authors: article.authors,
+                    abstract: article.abstract || "No abstract available",
+                  }}
+                  label="Export Abstract"
+                />
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">Font Size:</span>
                 <button

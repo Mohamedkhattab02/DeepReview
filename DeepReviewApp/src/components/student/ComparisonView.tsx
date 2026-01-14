@@ -1,8 +1,19 @@
-//component /student/ComparisonView.tsx
+// src/components/student/ComparisonView.tsx
 "use client";
 
 import { useState } from "react";
-import { ArrowLeftRight, Check, X, BookOpen, Users, Calendar, FileText, Tag, Sparkles } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Check,
+  X,
+  BookOpen,
+  Users,
+  Calendar,
+  FileText,
+  Tag,
+  Sparkles,
+} from "lucide-react";
+import ExportButton from "@/components/shared/ExportButton";
 
 interface Article {
   id: string;
@@ -71,7 +82,8 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
     ]).size;
 
     const topicScore = totalTopics > 0 ? (topics.shared.length / totalTopics) * 100 : 0;
-    const keywordScore = totalKeywords > 0 ? (keywords.shared.length / totalKeywords) * 100 : 0;
+    const keywordScore =
+      totalKeywords > 0 ? (keywords.shared.length / totalKeywords) * 100 : 0;
 
     return Math.round((topicScore + keywordScore) / 2);
   };
@@ -92,6 +104,40 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
     return "Low Similarity";
   };
 
+  // ✅ Prepare comparison data for export
+  const getComparisonData = () => {
+    if (!article1 || !article2 || !topicsComp || !keywordsComp) return null;
+
+    return {
+      article1: {
+        title: article1.title,
+        authors: article1.authors || [],
+        year: article1.publication_year || "N/A",
+        pages: article1.pages || "N/A",
+        abstract: article1.abstract || "Not available",
+      },
+      article2: {
+        title: article2.title,
+        authors: article2.authors || [],
+        year: article2.publication_year || "N/A",
+        pages: article2.pages || "N/A",
+        abstract: article2.abstract || "Not available",
+      },
+      comparisonData: {
+        similarityScore,
+        similarityLabel: getSimilarityLabel(similarityScore),
+        sharedTopics: topicsComp.shared,
+        uniqueTopics1: topicsComp.unique1,
+        uniqueTopics2: topicsComp.unique2,
+        sharedKeywords: keywordsComp.shared,
+        uniqueKeywords1: keywordsComp.unique1,
+        uniqueKeywords2: keywordsComp.unique2,
+      },
+    };
+  };
+
+  const exportData = getComparisonData();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -100,9 +146,19 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-lg">
             <ArrowLeftRight className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-            Article Comparison
-          </h1>
+
+          {/* ✅ Title + Export button row */}
+          <div className="flex items-center justify-center gap-4 mb-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Article Comparison
+            </h1>
+
+            {/* ✅ Export Button - only when both articles selected */}
+            {article1 && article2 && exportData && (
+              <ExportButton type="comparison" data={exportData} label="Export" />
+            )}
+          </div>
+
           <p className="text-gray-600">Compare research articles side by side</p>
         </div>
 
@@ -113,8 +169,12 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
               <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full mb-4">
                 <BookOpen className="w-10 h-10 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">No Articles to Compare</h3>
-              <p className="text-gray-500">Upload and analyze at least two articles to begin comparison</p>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                No Articles to Compare
+              </h3>
+              <p className="text-gray-500">
+                Upload and analyze at least two articles to begin comparison
+              </p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-8">
@@ -182,23 +242,35 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
               <div className="relative">
                 <div className="flex items-center gap-3 mb-6">
                   <Sparkles className="w-6 h-6 text-indigo-600" />
-                  <h2 className="text-2xl font-bold text-gray-800">Similarity Analysis</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Similarity Analysis
+                  </h2>
                 </div>
-                
+
                 <div className="flex items-center gap-6">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600">{getSimilarityLabel(similarityScore)}</span>
-                      <span className="text-sm font-bold text-gray-700">{similarityScore}%</span>
+                      <span className="text-sm font-medium text-gray-600">
+                        {getSimilarityLabel(similarityScore)}
+                      </span>
+                      <span className="text-sm font-bold text-gray-700">
+                        {similarityScore}%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden shadow-inner">
                       <div
-                        className={`bg-gradient-to-r ${getSimilarityColor(similarityScore)} h-4 rounded-full transition-all duration-1000 ease-out shadow-md`}
+                        className={`bg-gradient-to-r ${getSimilarityColor(
+                          similarityScore
+                        )} h-4 rounded-full transition-all duration-1000 ease-out shadow-md`}
                         style={{ width: `${similarityScore}%` }}
                       ></div>
                     </div>
                   </div>
-                  <div className={`text-5xl font-bold bg-gradient-to-r ${getSimilarityColor(similarityScore)} bg-clip-text text-transparent`}>
+                  <div
+                    className={`text-5xl font-bold bg-gradient-to-r ${getSimilarityColor(
+                      similarityScore
+                    )} bg-clip-text text-transparent`}
+                  >
                     {similarityScore}%
                   </div>
                 </div>
@@ -213,7 +285,7 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                   Article Details
                 </h2>
               </div>
-              
+
               <div className="divide-y divide-gray-100">
                 {/* Title */}
                 <div className="grid md:grid-cols-3 gap-6 p-6 hover:bg-gray-50 transition-colors">
@@ -246,10 +318,12 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                     Year & Pages
                   </div>
                   <div className="text-gray-600">
-                    {article1.publication_year || "—"} • {article1.pages || "—"} pages
+                    {article1.publication_year || "—"} • {article1.pages || "—"}{" "}
+                    pages
                   </div>
                   <div className="text-gray-600">
-                    {article2.publication_year || "—"} • {article2.pages || "—"} pages
+                    {article2.publication_year || "—"} • {article2.pages || "—"}{" "}
+                    pages
                   </div>
                 </div>
 
@@ -277,7 +351,7 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                   <h2 className="text-2xl font-bold text-gray-800">Main Topics</h2>
                 </div>
 
-                {topicsComp.shared.length > 0 && (
+                {topicsComp.shared.length > 0 ? (
                   <div className="mb-8 p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200">
                     <div className="flex items-center gap-2 mb-4">
                       <Check className="w-5 h-5 text-emerald-600" />
@@ -296,13 +370,27 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                       ))}
                     </div>
                   </div>
+                ) : (
+                  <div className="mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <X className="w-5 h-5 text-gray-500" />
+                      <h3 className="text-lg font-bold text-gray-700">
+                        No Shared Topics
+                      </h3>
+                    </div>
+                    <p className="text-gray-600 text-sm">
+                      The selected articles do not share any main topics.
+                    </p>
+                  </div>
                 )}
 
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Unique to Article 1 */}
                   <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
                     <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center text-white text-xs">1</div>
+                      <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center text-white text-xs">
+                        1
+                      </div>
                       Unique Topics ({topicsComp.unique1.length})
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -316,7 +404,9 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                           </span>
                         ))
                       ) : (
-                        <span className="text-blue-600 text-sm italic">No unique topics</span>
+                        <span className="text-blue-600 text-sm italic">
+                          No unique topics
+                        </span>
                       )}
                     </div>
                   </div>
@@ -324,7 +414,9 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                   {/* Unique to Article 2 */}
                   <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-200">
                     <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-purple-500 flex items-center justify-center text-white text-xs">2</div>
+                      <div className="w-6 h-6 rounded-lg bg-purple-500 flex items-center justify-center text-white text-xs">
+                        2
+                      </div>
                       Unique Topics ({topicsComp.unique2.length})
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -338,7 +430,9 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                           </span>
                         ))
                       ) : (
-                        <span className="text-purple-600 text-sm italic">No unique topics</span>
+                        <span className="text-purple-600 text-sm italic">
+                          No unique topics
+                        </span>
                       )}
                     </div>
                   </div>
@@ -354,7 +448,7 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                   <h2 className="text-2xl font-bold text-gray-800">Keywords</h2>
                 </div>
 
-                {keywordsComp.shared.length > 0 && (
+                {keywordsComp.shared.length > 0 ? (
                   <div className="mb-8 p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200">
                     <div className="flex items-center gap-2 mb-4">
                       <Check className="w-5 h-5 text-emerald-600" />
@@ -373,13 +467,27 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                       ))}
                     </div>
                   </div>
+                ) : (
+                  <div className="mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <X className="w-5 h-5 text-gray-500" />
+                      <h3 className="text-lg font-bold text-gray-700">
+                        No Shared Keywords
+                      </h3>
+                    </div>
+                    <p className="text-gray-600 text-sm">
+                      The selected articles do not share any keywords.
+                    </p>
+                  </div>
                 )}
 
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Unique to Article 1 */}
                   <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
                     <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center text-white text-xs">1</div>
+                      <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center text-white text-xs">
+                        1
+                      </div>
                       Unique Keywords ({keywordsComp.unique1.length})
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -393,7 +501,9 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                           </span>
                         ))
                       ) : (
-                        <span className="text-blue-600 text-sm italic">No unique keywords</span>
+                        <span className="text-blue-600 text-sm italic">
+                          No unique keywords
+                        </span>
                       )}
                     </div>
                   </div>
@@ -401,7 +511,9 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                   {/* Unique to Article 2 */}
                   <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-200">
                     <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-purple-500 flex items-center justify-center text-white text-xs">2</div>
+                      <div className="w-6 h-6 rounded-lg bg-purple-500 flex items-center justify-center text-white text-xs">
+                        2
+                      </div>
                       Unique Keywords ({keywordsComp.unique2.length})
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -415,7 +527,9 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                           </span>
                         ))
                       ) : (
-                        <span className="text-purple-600 text-sm italic">No unique keywords</span>
+                        <span className="text-purple-600 text-sm italic">
+                          No unique keywords
+                        </span>
                       )}
                     </div>
                   </div>
