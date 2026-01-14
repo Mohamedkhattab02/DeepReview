@@ -2,8 +2,281 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   🎨 Base Styles & Transitions
+   ============================================ */
+
 /* מעבר חלק בין Light / Dark */
 html,
 body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* Fix for RTL content (Hebrew) */
+[dir="rtl"] {
+  direction: rtl;
+}
+
+/* ============================================
+   ✨ Custom Animations
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.5s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ============================================
+   🎨 Custom Scrollbar
+   ============================================ */
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track,
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb,
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #818cf8, #a78bfa);
+  border-radius: 10px;
+  border: 2px solid #f1f5f9;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #6366f1, #9333ea);
+}
+
+/* Firefox scrollbar */
+.overflow-y-auto,
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #818cf8 #f1f5f9;
+}
+
+/* ============================================
+   💎 Prose Styling Enhancements
+   ============================================ */
+
+.prose {
+  max-width: 65ch;
+}
+
+.prose code {
+  font-weight: 500;
+  font-size: 0.875em;
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+}
+
+.prose strong {
+  font-weight: 700;
+  color: inherit;
+}
+
+.prose em {
+  font-style: italic;
+}
+
+/* Better spacing for prose headings */
+.prose h1,
+.prose h2,
+.prose h3 {
+  scroll-margin-top: 2rem;
+}
+
+.prose pre {
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.prose pre code {
+  font-weight: 400;
+  padding: 0;
+}
+
+/* Better list styling */
+.prose ul,
+.prose ol {
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Better blockquote styling */
+.prose blockquote {
+  font-style: italic;
+  border-left-width: 4px;
+  padding-left: 1rem;
+}
+
+/* ============================================
+   🌐 RTL Support for Hebrew
+   ============================================ */
+
+[dir="rtl"] .prose blockquote {
+  border-left-width: 0;
+  border-right-width: 4px;
+  padding-left: 0;
+  padding-right: 1rem;
+}
+
+[dir="rtl"] .prose ul,
+[dir="rtl"] .prose ol {
+  padding-left: 0;
+  padding-right: 1.5rem;
+}
+
+/* ============================================
+   🎯 Focus Styles (Accessibility)
+   ============================================ */
+
+*:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* ============================================
+   🚀 Performance Optimizations
+   ============================================ */
+
+/* GPU acceleration for animations */
+.animate-fadeIn,
+.animate-slideUp,
+.animate-pulse-slow {
+  will-change: transform, opacity;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent layout shift */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ============================================
+   🎨 Custom Utilities
+   ============================================ */
+
+@layer utilities {
+  /* Glass morphism effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+  }
+
+  /* Shadow utilities */
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  }
+
+  .shadow-glow-purple {
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+  }
+
+  /* Text balance for better typography */
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ============================================
+   📱 Mobile Optimizations
+   ============================================ */
+
+@media (max-width: 640px) {
+  .prose {
+    font-size: 0.875rem;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar {
+    width: 4px;
+  }
+}
+
+/* ============================================
+   🌙 Dark Mode Support (if needed)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  .overflow-y-auto::-webkit-scrollbar-track,
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-thumb,
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    border-color: #1e293b;
+  }
+}
+
+
+
+

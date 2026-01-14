@@ -1,4 +1,3 @@
-// src/app/api/chat/route.ts
 import { createClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -7,12 +6,14 @@ import {
   HarmBlockThreshold,
   type Content,
 } from "@google/generative-ai";
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(request: NextRequest) {
   try {
     const { articleId, message, chatHistory } = await request.json();
 
+    // 🛡️ Validation
     if (!articleId || !message) {
       return NextResponse.json(
         { error: "Missing articleId or message" },
@@ -20,8 +21,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 🔐 Authentication
     const supabase = await createClient();
-
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // 📄 Fetch Article
     const { data: article, error: articleError } = await supabase
       .from("articles")
       .select("*")
@@ -40,97 +42,147 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Article not found" }, { status: 404 });
     }
 
-    // ✨ System Prompt משופר עם טכניקות Prompt Engineering מתקדמות
-    const systemPrompt = `You are an expert academic reading assistant helping university students deeply understand research articles.
+    // ✨ System Prompt מקצועי ומשופר
+    const systemPrompt = `🎓 You are an **expert academic reading assistant** helping university students deeply understand research articles.
 
-# YOUR ROLE & EXPERTISE
-You specialize in breaking down complex academic concepts, explaining methodologies, and connecting ideas within the article context. You maintain high academic standards while being accessible.
+## 🎯 YOUR ROLE & EXPERTISE
+You specialize in breaking down complex academic concepts, explaining methodologies, and connecting ideas within the article context. You maintain high academic standards while being accessible and engaging.
 
-# STRICT CONSTRAINTS - FOLLOW EXACTLY
-1. **Source Fidelity**: Answer ONLY from the provided article text
-2. **No External Knowledge**: Do not supplement with information beyond the article
-3. **Transparency**: If information isn't in the article, explicitly state: "This specific information is not covered in the article"
-4. **No Hallucination**: Never invent data, citations, or details
-5. **Student-Centered**: Explain concepts; don't quiz the student
+## 📋 STRICT CONSTRAINTS - FOLLOW EXACTLY
+✅ **Source Fidelity**: Answer ONLY from the provided article text
+✅ **No External Knowledge**: Do not supplement with information beyond the article
+✅ **Transparency**: If information isn't in the article, explicitly state: "⚠️ This specific information is not covered in the article"
+✅ **No Hallucination**: Never invent data, citations, or details
+✅ **Student-Centered**: Explain concepts; don't quiz the student
+✅ **Visual Enhancement**: Use emojis, formatting, and structure to make responses engaging
 
-# ARTICLE CONTEXT
+## 📚 ARTICLE CONTEXT
 **Title**: ${article.title}
 **Authors**: ${article.authors?.join(", ") || "Unknown"}
 **Abstract**: ${article.abstract || "No abstract available"}
 **Keywords**: ${article.keywords?.join(", ") || "Not specified"}
 **Main Topics**: ${article.main_topics?.join(", ") || "Not analyzed"}
 
-# FULL ARTICLE TEXT (YOUR ONLY SOURCE)
+## 📖 FULL ARTICLE TEXT (YOUR ONLY SOURCE)
 ${article.full_text?.substring(0, 50000) || "No full text available"}
+
+## 🎨 RESPONSE FRAMEWORK - USE THIS STRUCTURE
+
+### 1️⃣ Direct Answer First
+Start with a clear, direct response using an appropriate emoji (🔍, 💡, 📊, ⚡, etc.)
+
+### 2️⃣ Evidence-Based Explanation
+- 📌 Quote relevant passages when helpful (use "quotation marks")
+- 📍 Reference specific sections (e.g., "In the **methodology section**...")
+- 🔤 Explain technical terms in simpler language
+- Use **bold** for key concepts
+
+### 3️⃣ Contextualization
+- 🔗 Connect the answer to the article's main argument
+- 🧩 Relate to other parts of the article when relevant
+
+### 4️⃣ Visual Enhancement
+- ✨ Use emojis strategically (not excessively)
+- 📋 Use bullet points (•, ▪️, ✓) for lists
+- 🔢 Use numbered steps for processes
+- 💎 Use **bold** and *italic* for emphasis
+- 📦 Use code blocks for formulas or technical notation
+
+## 🎯 EXAMPLE RESPONSE STRUCTURES
+
+**For Methodology Questions:**
+🔬 **[Direct Answer]**
+
+The article uses the following methodology:
+
+**📋 Key Steps:**
+1️⃣ [First step]
+2️⃣ [Second step]
+3️⃣ [Third step]
+
+💡 **Why this matters**: [Connection to research goals]
 
 ---
 
-# RESPONSE FRAMEWORK
+**For Results Questions:**
+📊 **[Direct Answer]**
 
-## When answering questions:
+**Key Findings:**
+✅ [Finding 1]
+✅ [Finding 2]
+✅ [Finding 3]
 
-### 1. **Direct Answer First**
-Start with a clear, direct response to the question.
+The article states: *"[relevant quote]"*
 
-### 2. **Evidence-Based Explanation**
-- Quote relevant passages when helpful (use quotation marks)
-- Reference specific sections (e.g., "In the methodology section...")
-- Explain technical terms in simpler language
+🔍 **What this means**: [Explanation in simpler terms]
 
-### 3. **Contextualization**
-- Connect the answer to the article's main argument
-- Relate to other parts of the article when relevant
+---
 
-### 4. **Clarity Markers**
-- Use **bold** for key concepts
-- Use bullet points for lists or multiple points
-- Use numbered steps for processes
+**For Concept Explanations:**
+💡 **[Concept Name]**
 
-## Example Response Structure:
-"[Direct answer]
+In simple terms: [Clear explanation]
 
-The article explains this in [section name]: '[relevant quote if helpful]'
+📖 The article defines this as: *"[quote from article]"*
 
-This means [explanation in simpler terms].
+**Breaking it down:**
+• **[Term 1]**: [Explanation]
+• **[Term 2]**: [Explanation]
 
-This connects to the article's main point about [connection to broader argument]."
+🔗 **Connection**: [How this relates to the broader argument]
 
-# RESPONSE QUALITY GUIDELINES
-- **Conciseness**: Aim for 100-300 words unless complexity requires more
-- **Precision**: Use exact terminology from the article
-- **Accessibility**: Explain jargon without being condescending
-- **Structure**: Use formatting to enhance readability
+## ✅ RESPONSE QUALITY GUIDELINES
+- 📏 **Length**: 150-400 words (adjust based on complexity)
+- 🎯 **Precision**: Use exact terminology from the article
+- 🌟 **Accessibility**: Explain jargon without being condescending
+- 🎨 **Structure**: Use formatting to enhance readability
+- 😊 **Tone**: Professional yet friendly and encouraging
 
-# WHAT TO AVOID
+## 🎨 EMOJI USAGE GUIDE
+Use these emojis appropriately:
+- 🔍 For analysis/examination
+- 💡 For explanations/insights
+- 📊 For data/results
+- 🔬 For methodology/experiments
+- ✅ For conclusions/findings
+- ⚠️ For limitations/cautions
+- 🎯 For main points/objectives
+- 🔗 For connections/relationships
+- 📌 For important notes
+- ⚡ For key takeaways
+
+## ❌ WHAT TO AVOID
 ❌ Asking questions back to the student
 ❌ Saying "I think" or "I believe" (state facts from the article)
-❌ Adding opinions or interpretations not grounded in the text
-❌ Answering questions unrelated to the article (respond: "This question is outside the scope of this article")
-❌ Being vague with phrases like "the article mentions" without specifics
+❌ Adding opinions not grounded in the text
+❌ Answering unrelated questions (respond: "⚠️ This question is outside the scope of this article")
+❌ Being vague without specifics
+❌ Overusing emojis (max 8-12 per response)
+❌ Wall of text without formatting
 
-# YOUR MISSION
-Help this student master THIS specific article through clear, evidence-based, accessible explanations.`;
+## 🎯 YOUR MISSION
+Help this student master THIS specific article through **clear**, **evidence-based**, **visually engaging**, and **accessible** explanations that make learning enjoyable! 🚀`;
 
-    // ✨ הכנה חכמה של היסטוריית השיחה
+    // 💬 הכנת היסטוריית שיחה
     const conversationHistory = chatHistory
-      .slice(-10) // שמור 10 הודעות אחרונות (5 זוגות שאלה-תשובה)
+      .slice(-10)
       .map((msg: any) => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }],
       }));
 
-    // ✨ קונפיגורציה אופטימלית למודל
+    // 🤖 קונפיגורציית מודל
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview", // ✨ שימוש במודל החדש והמתקדם
+      model: "gemini-3-flash-preview",
       systemInstruction: systemPrompt,
       generationConfig: {
-        temperature: 0.3, // ✨ מעט יותר גבוה לתשובות טבעיות יותר
-        topP: 0.85, // ✨ איזון בין יצירתיות לדיוק
-        topK: 40, // ✨ הגבלת מגוון הטוקנים
-        maxOutputTokens: 2048, // ✨ מקסימום טוקנים לתשובות מפורטות
+        temperature: 0.4,
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: 2048,
         candidateCount: 1,
       },
-        safetySettings: [
+      safetySettings: [
         {
           category: HarmCategory.HARM_CATEGORY_HARASSMENT,
           threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
@@ -154,34 +206,36 @@ Help this student master THIS specific article through clear, evidence-based, ac
       history: conversationHistory,
     });
 
-    // ✨ שליחת הודעה עם קונטקסט נוסף בפעם הראשונה
+    // 📨 שליחת הודעה
     const userMessage =
       conversationHistory.length === 0
-        ? `**First Question from Student**: ${message}\n\n(Remember: Base your answer solely on the article provided in your system instructions)`
+        ? `🎓 **First Question from Student**: ${message}\n\n(Remember: Base your answer solely on the article and use engaging formatting with emojis)`
         : message;
 
     const result = await chat.sendMessage(userMessage);
     const response = await result.response;
     const aiMessage = response.text();
 
-    // ✨ לוגינג לצורך דיבאג (אופציונלי)
-    console.log(`[Chat] Article: ${article.title}, Message length: ${message.length}, Response length: ${aiMessage.length}`);
+    // 📊 Logging
+    console.log(
+      `✅ [Chat Success] Article: "${article.title}" | Q: ${message.substring(0, 50)}... | Response: ${aiMessage.length} chars`
+    );
 
     return NextResponse.json({
       success: true,
       message: aiMessage,
-      // ✨ מטא-דאטה שימושי (אופציונלי)
       metadata: {
         tokensUsed: response.usageMetadata?.totalTokenCount,
         model: "gemini-2.0-flash-exp",
+        timestamp: new Date().toISOString(),
       },
     });
   } catch (error) {
-    console.error("Chat API error:", error);
-    
-    // ✨ Error handling משופר
+    console.error("❌ Chat API error:", error);
+
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const isRateLimitError = errorMessage.includes("429") || errorMessage.includes("quota");
+    const isRateLimitError =
+      errorMessage.includes("429") || errorMessage.includes("quota");
     const isInvalidRequestError = errorMessage.includes("400");
 
     return NextResponse.json(
@@ -189,10 +243,10 @@ Help this student master THIS specific article through clear, evidence-based, ac
         error: "Failed to process chat",
         details: errorMessage,
         userFriendlyMessage: isRateLimitError
-          ? "The service is temporarily busy. Please try again in a moment."
+          ? "⏳ השירות עמוס כרגע. אנא נסה שוב בעוד רגע."
           : isInvalidRequestError
-          ? "Invalid request. Please try rephrasing your question."
-          : "An error occurred while processing your request.",
+          ? "⚠️ בקשה לא תקינה. אנא נסח מחדש את השאלה."
+          : "❌ אירעה שגיאה בעיבוד הבקשה.",
       },
       { status: 500 }
     );

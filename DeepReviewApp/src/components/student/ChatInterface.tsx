@@ -1,9 +1,17 @@
-// src/components/student/ChatInterface.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { Send, Loader2, Sparkles, BookOpen, AlertCircle, Trash2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Message } from "@/types/message";
-import { saveMessage } from "@/actions/chat";
+import { saveMessage, clearChatHistory } from "@/actions/chat";
+
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
 
 interface ChatInterfaceProps {
   articleId: string;
@@ -14,360 +22,402 @@ interface ChatInterfaceProps {
 export default function ChatInterface({
   articleId,
   articleTitle,
-  initialMessages,
+  initialMessages = [],
 }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  // המרה של ההודעות הראשוניות מ-DB לפורמט של הקומפוננטה
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    initialMessages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+      timestamp: new Date(msg.created_at),
+    }))
+  );
+  
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isClearing, setIsClearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // 📜 Auto-scroll to bottom
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  // 🎨 Auto-resize textarea
   useEffect(() => {
-    adjustTextareaHeight();
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
   }, [input]);
 
-  useEffect(() => {
-    if (textareaRef.current && !isLoading) {
-      textareaRef.current.focus();
-    }
-  }, [isLoading]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const adjustTextareaHeight = () => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // 📨 Send message with proper DB persistence
+  const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage = input.trim();
+    const userMessageContent = input.trim();
     setInput("");
     setIsLoading(true);
     setError(null);
 
-    const tempUserMessage: Message = {
-      id: `temp-${Date.now()}`,
-      article_id: articleId,
-      user_id: "temp",
+    // הודעת משתמש זמנית עם ID ייחודי
+    const tempUserMessage: ChatMessage = {
       role: "user",
-      content: userMessage,
-      created_at: new Date().toISOString(),
+      content: userMessageContent,
+      timestamp: new Date(),
     };
 
+    // הצג הודעה מיד בממשק
     setMessages((prev) => [...prev, tempUserMessage]);
 
     try {
-      await saveMessage(articleId, "user", userMessage);
+      // 1️⃣ שמור הודעת משתמש ב-DB
+      const savedUserMessage = await saveMessage(articleId, "user", userMessageContent);
+      
+      if (!savedUserMessage) {
+        throw new Error("שגיאה בשמירת ההודעה");
+      }
 
+      // 2️⃣ שלח ל-API לקבלת תשובת AI
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           articleId,
-          message: userMessage,
-          chatHistory: messages,
+          message: userMessageContent,
+          chatHistory: messages.map(msg => ({
+            role: msg.role,
+            content: msg.content,
+          })),
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to send message");
+        throw new Error(data.userFriendlyMessage || "שגיאה בקבלת תשובה");
       }
 
-      await saveMessage(articleId, "assistant", data.message);
+      // 3️⃣ שמור תשובת AI ב-DB
+      const savedAssistantMessage = await saveMessage(articleId, "assistant", data.message);
+      
+      if (!savedAssistantMessage) {
+        throw new Error("שגיאה בשמירת התשובה");
+      }
 
-      const assistantMessage: Message = {
-        id: `temp-${Date.now()}-ai`,
-        article_id: articleId,
-        user_id: "temp",
+      // 4️⃣ הצג תשובת AI בממשק
+      const assistantMessage: ChatMessage = {
         role: "assistant",
         content: data.message,
-        created_at: new Date().toISOString(),
+        timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error("Chat error:", error);
-      setError(error instanceof Error ? error.message : "Failed to send message");
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "שגיאה לא ידועה";
+      setError(errorMessage);
+      console.error("Chat error:", err);
       
-      // Remove the temporary user message on error
-      setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
+      // הסר את ההודעה הזמנית במקרה של שגיאה
+      setMessages((prev) => prev.slice(0, -1));
       
-      // Restore the input
-      setInput(userMessage);
+      // החזר את הטקסט לשדה הקלט
+      setInput(userMessageContent);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // ⌨️ Handle Enter key
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      sendMessage();
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setInput(suggestion);
-    textareaRef.current?.focus();
+  // 🗑️ Clear chat history
+  const clearHistory = async () => {
+    if (!confirm("האם אתה בטוח שברצונך למחוק את כל ההיסטוריה? פעולה זו בלתי הפיכה.")) {
+      return;
+    }
+
+    setIsClearing(true);
+    setError(null);
+
+    try {
+      const success = await clearChatHistory(articleId);
+
+      if (success) {
+        setMessages([]);
+      } else {
+        throw new Error("שגיאה במחיקת ההיסטוריה");
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "שגיאה במחיקת ההיסטוריה";
+      setError(errorMessage);
+      console.error("Clear history error:", err);
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 to-blue-50/30">
-      {/* Header with Glassmorphism */}
-      <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-6 py-5 flex-shrink-0 shadow-xl">
-        <div className="absolute inset-0 bg-black/10 backdrop-blur-sm"></div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-lg">
-              🤖
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold truncate drop-shadow-sm">
-                {articleTitle}
-              </h2>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="text-sm text-blue-100/90 flex items-center gap-1.5">
-                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></span>
-                  Socratic Discussion
-                </span>
-                <span className="text-sm text-blue-100/70">
-                  {messages.length} {messages.length === 1 ? "message" : "messages"}
-                </span>
-              </div>
-            </div>
+    <div className="flex flex-col h-[calc(100vh-12rem)] bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 rounded-2xl shadow-2xl border border-slate-200/60 overflow-hidden">
+      {/* 🎯 Header */}
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-6 py-5 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 backdrop-blur-sm p-2 rounded-xl">
+            <BookOpen className="w-6 h-6" />
           </div>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+              שיחה אקדמית חכמה
+            </h2>
+            <p className="text-sm text-blue-100 mt-0.5 line-clamp-1">
+              {articleTitle}
+            </p>
+          </div>
+          {messages.length > 0 && (
+            <button
+              onClick={clearHistory}
+              disabled={isClearing}
+              className="bg-white/10 hover:bg-white/20 backdrop-blur-sm p-2 rounded-xl transition-all disabled:opacity-50"
+              title="מחק היסטוריה"
+            >
+              {isClearing ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Trash2 className="w-5 h-5" />
+              )}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Messages Area with Custom Scrollbar */}
-      <div 
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar"
-        style={{
-          scrollbarWidth: "thin",
-          scrollbarColor: "#cbd5e1 transparent",
-        }}
-      >
+      {/* 💬 Messages Container */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
         {messages.length === 0 ? (
-          <div className="text-center py-12 space-y-6 animate-fade-in">
-            <div className="relative inline-block">
-              <div className="text-7xl animate-bounce-slow">🤖</div>
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full border-4 border-white shadow-lg"></div>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Start Your Socratic Journey
+          <div className="flex flex-col items-center justify-center h-full text-center px-4">
+            <div className="bg-gradient-to-br from-blue-100 to-purple-100 p-8 rounded-3xl shadow-lg max-w-md">
+              <Sparkles className="w-16 h-16 text-indigo-600 mx-auto mb-4 animate-bounce" />
+              <h3 className="text-2xl font-bold text-slate-800 mb-3">
+                👋 שלום! אני כאן לעזור
               </h3>
-              <p className="text-gray-600 max-w-lg mx-auto leading-relaxed">
-                Ask me anything about this article. I'll guide you through deep understanding 
-                using thoughtful questions and discussion.
+              <p className="text-slate-600 leading-relaxed">
+                שאל אותי <span className="font-semibold text-indigo-600">כל שאלה</span> על המאמר
+                ואני אסביר לך בצורה <span className="font-semibold text-purple-600">ברורה ומקצועית</span> 🚀
               </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto mt-8">
-              {[
-                { icon: "💡", text: "What are the main findings?", query: "What are the main findings of this article?" },
-                { icon: "🔬", text: "Explain the methodology", query: "Explain the methodology used in this research" },
-                { icon: "⚠️", text: "What are the limitations?", query: "What are the limitations of this study?" },
-                { icon: "🔗", text: "Relation to other research", query: "How does this relate to other research?" },
-              ].map((suggestion, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSuggestionClick(suggestion.query)}
-                  className="group relative bg-white/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl p-5 text-left hover:border-blue-500 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative flex items-center gap-3">
-                    <span className="text-3xl group-hover:scale-110 transition-transform">
-                      {suggestion.icon}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {suggestion.text}
-                    </span>
-                  </div>
-                </button>
-              ))}
+              <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-white/70 backdrop-blur-sm px-4 py-3 rounded-xl shadow-sm">
+                  <span className="text-2xl mb-1 block">🔍</span>
+                  <span className="text-slate-700 font-medium">ניתוח מעמיק</span>
+                </div>
+                <div className="bg-white/70 backdrop-blur-sm px-4 py-3 rounded-xl shadow-sm">
+                  <span className="text-2xl mb-1 block">💡</span>
+                  <span className="text-slate-700 font-medium">הסברים פשוטים</span>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          <>
-            {messages.map((msg, idx) => (
+          messages.map((message, index) => (
+            <div
+              key={`${message.role}-${index}-${message.timestamp.getTime()}`}
+              className={`flex ${
+                message.role === "user" ? "justify-end" : "justify-start"
+              } animate-fadeIn`}
+            >
+              {message.role === "assistant" && (
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg mr-3 ring-4 ring-purple-100">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+              )}
+
               <div
-                key={msg.id}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-slide-up`}
-                style={{ animationDelay: `${idx * 0.05}s` }}
+                className={`max-w-[75%] rounded-2xl px-6 py-4 shadow-lg ${
+                  message.role === "user"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
+                    : "bg-white border border-slate-200"
+                }`}
               >
                 <div
-                  className={`max-w-[80%] lg:max-w-[70%] rounded-2xl px-6 py-4 shadow-lg transition-all duration-300 hover:shadow-xl ${
-                    msg.role === "user"
-                      ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white"
-                      : "bg-white text-gray-900 border-2 border-gray-100 hover:border-blue-200"
+                  className={`prose prose-sm max-w-none ${
+                    message.role === "user"
+                      ? "prose-invert"
+                      : "prose-slate prose-headings:font-bold prose-p:leading-relaxed prose-li:marker:text-indigo-600"
                   }`}
                 >
-                  {msg.role === "assistant" && (
-                    <div className="flex items-center gap-2.5 mb-3 pb-3 border-b border-gray-100">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-lg shadow-md">
-                        🤖
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                          Socratic Assistant
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className={`prose prose-sm max-w-none ${msg.role === "user" ? "prose-invert" : ""}`}>
-                    <p className="whitespace-pre-wrap leading-relaxed m-0">
-                      {msg.content}
+                  {message.role === "user" ? (
+                    <p className="m-0 leading-relaxed font-medium">
+                      {message.content}
                     </p>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
-                    <span
-                      className={`text-xs font-medium ${
-                        msg.role === "user" ? "text-blue-200" : "text-gray-500"
-                      }`}
+                  ) : (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: ({ node, ...props }) => (
+                          <h1 className="text-2xl font-bold text-indigo-900 mt-4 mb-3 flex items-center gap-2" {...props} />
+                        ),
+                        h2: ({ node, ...props }) => (
+                          <h2 className="text-xl font-bold text-indigo-800 mt-3 mb-2 flex items-center gap-2" {...props} />
+                        ),
+                        h3: ({ node, ...props }) => (
+                          <h3 className="text-lg font-semibold text-indigo-700 mt-2 mb-2" {...props} />
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p className="my-3 leading-relaxed text-slate-700" {...props} />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul className="my-3 space-y-2" {...props} />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol className="my-3 space-y-2" {...props} />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li className="text-slate-700" {...props} />
+                        ),
+                        strong: ({ node, ...props }) => (
+                          <strong className="font-bold text-indigo-900" {...props} />
+                        ),
+                        em: ({ node, ...props }) => (
+                          <em className="italic text-purple-700" {...props} />
+                        ),
+                        code: ({ node, inline, ...props }: any) =>
+                          inline ? (
+                            <code className="bg-slate-100 text-indigo-700 px-2 py-0.5 rounded text-sm font-mono" {...props} />
+                          ) : (
+                            <code className="block bg-slate-100 text-slate-800 p-3 rounded-lg text-sm font-mono overflow-x-auto" {...props} />
+                          ),
+                        blockquote: ({ node, ...props }) => (
+                          <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-slate-600 my-4 bg-indigo-50/50 py-2 rounded-r-lg" {...props} />
+                        ),
+                      }}
                     >
-                      {new Date(msg.created_at).toLocaleTimeString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
+                      {message.content}
+                    </ReactMarkdown>
+                  )}
+                </div>
+                <div
+                  className={`text-xs mt-3 pt-2 border-t ${
+                    message.role === "user"
+                      ? "text-blue-200 border-blue-400/30"
+                      : "text-slate-400 border-slate-200"
+                  }`}
+                >
+                  {message.timestamp.toLocaleTimeString("he-IL", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </div>
               </div>
-            ))}
 
-            {isLoading && (
-              <div className="flex justify-start animate-slide-up">
-                <div className="bg-white border-2 border-blue-100 rounded-2xl px-6 py-5 shadow-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-lg shadow-md">
-                      🤖
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="flex space-x-1.5">
-                          <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce"></div>
-                          <div
-                            className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.15s" }}
-                          ></div>
-                          <div
-                            className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.3s" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold text-gray-700">
-                          Thinking deeply...
-                        </span>
-                      </div>
-                      <div className="w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-progress"></div>
-                      </div>
-                    </div>
-                  </div>
+              {message.role === "user" && (
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg ml-3 ring-4 ring-blue-100">
+                  <span className="text-white font-bold text-sm">אתה</span>
                 </div>
+              )}
+            </div>
+          ))
+        )}
+
+        {/* 🔄 Loading indicator */}
+        {isLoading && (
+          <div className="flex justify-start animate-fadeIn">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg mr-3 ring-4 ring-purple-100">
+              <Loader2 className="w-5 h-5 text-white animate-spin" />
+            </div>
+            <div className="bg-white border border-slate-200 rounded-2xl px-6 py-4 shadow-lg max-w-[75%]">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-2.5 h-2.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+                <span className="text-sm text-slate-600 font-medium">
+                  מנתח את השאלה...
+                </span>
               </div>
-            )}
-          </>
+            </div>
+          </div>
+        )}
+
+        {/* ⚠️ Error message */}
+        {error && (
+          <div className="flex justify-center animate-fadeIn">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl shadow-lg flex items-center gap-3 max-w-md">
+              <AlertCircle className="w-6 h-6 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-semibold text-sm">שגיאה</p>
+                <p className="text-sm mt-1">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-600 transition-colors text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="mx-6 mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-shake">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">⚠️</span>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-red-800">Error</p>
-              <p className="text-sm text-red-600 mt-1">{error}</p>
-            </div>
-            <button
-              onClick={() => setError(null)}
-              className="text-red-400 hover:text-red-600 transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Input Area with Enhanced Design */}
-      <form onSubmit={handleSubmit} className="border-t-2 border-gray-200 bg-white/80 backdrop-blur-sm p-5 shadow-2xl">
-        <div className="flex gap-3 items-end max-w-5xl mx-auto">
+      {/* ✍️ Input Area */}
+      <div className="border-t border-slate-200 bg-white/80 backdrop-blur-sm px-6 py-5">
+        <div className="flex items-end gap-3">
           <div className="flex-1 relative">
             <textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a question about this article... (Shift+Enter for new line)"
-              className="w-full px-5 py-4 pr-12 border-2 border-gray-300 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all duration-300 text-gray-900 placeholder-gray-400 shadow-sm hover:shadow-md"
+              placeholder="💭 שאל שאלה על המאמר..."
+              className="w-full resize-none rounded-2xl border-2 border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 px-5 py-4 text-slate-800 placeholder-slate-400 transition-all duration-200 shadow-sm"
               rows={1}
               disabled={isLoading}
             />
-            <div className="absolute bottom-4 right-4 text-xs text-gray-400 font-medium">
-              {input.length > 0 && `${input.length} chars`}
-            </div>
+            
           </div>
+
           <button
-            type="submit"
+            onClick={sendMessage}
             disabled={!input.trim() || isLoading}
-            className="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold flex-shrink-0 shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100"
+            className="flex-shrink-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200 flex items-center gap-3 group"
           >
-            <span className="flex items-center gap-2">
-              {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Sending
-                </>
-              ) : (
-                <>
-                  Send
-                  <span className="group-hover:translate-x-1 transition-transform">➤</span>
-                </>
-              )}
-            </span>
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>שולח...</span>
+              </>
+            ) : (
+              <>
+                <span>שלח</span>
+                <Send className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
           </button>
         </div>
-        
-        <div className="flex items-center justify-between mt-3 max-w-5xl mx-auto">
-          <p className="text-xs text-gray-500 flex items-center gap-2">
-            <span className="text-base">💡</span>
-            <span>I use the Socratic method to help you think critically</span>
-          </p>
-          <p className="text-xs text-gray-400">
-            Press <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-300 font-mono">Enter</kbd> to send
-          </p>
-        </div>
-      </form>
+
+        <p className="text-xs text-slate-500 mt-3 text-center">
+          💡 <span className="font-medium">טיפ:</span> שאל שאלות ספציפיות לקבלת תשובות מדויקות יותר
+        </p>
+      </div>
 
       <style jsx>{`
-        @keyframes slide-up {
+        @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(10px);
           }
           to {
             opacity: 1;
@@ -375,80 +425,8 @@ export default function ChatInterface({
           }
         }
 
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes bounce-slow {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-
-        @keyframes progress {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(400%);
-          }
-        }
-
-        @keyframes shake {
-          0%, 100% {
-            transform: translateX(0);
-          }
-          25% {
-            transform: translateX(-10px);
-          }
-          75% {
-            transform: translateX(10px);
-          }
-        }
-
-        .animate-slide-up {
-          animation: slide-up 0.5s ease-out forwards;
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.8s ease-out;
-        }
-
-        .animate-bounce-slow {
-          animation: bounce-slow 2s ease-in-out infinite;
-        }
-
-        .animate-progress {
-          animation: progress 1.5s ease-in-out infinite;
-        }
-
-        .animate-shake {
-          animation: shake 0.5s ease-in-out;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
         }
       `}</style>
     </div>
