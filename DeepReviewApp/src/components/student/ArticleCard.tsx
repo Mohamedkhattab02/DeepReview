@@ -168,25 +168,27 @@ export default function ArticleCard({
 
         {/* Actions */}
         <div className="p-4 bg-gray-50 border-t flex gap-2">
-          <Link
-            href={`/dashboard/student/chat/${article.id}`}
-            className="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
-          >
-            💬 Chat
-          </Link>
 
-          <button
+              <button
             onClick={handleRead}
             className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-black transition font-medium text-sm"
           >
-            📖 Read
+            📖Read
           </button>
 
+          <Link
+            href={`/dashboard/student/chat/${article.id}`}
+            className="px-2 py-1 rounded-2xl font-bold text-l bg-blue-900 text-white !opacity-100 dark:!opacity-100 dark:!text-white dark:![filter:brightness(1.2)] transition shadow-xl"
+          >
+            💬Chat
+          </Link>
+
+      
             <Link
             href={`/dashboard/student/socraticbot/${article.id}`}
-            className="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+            className="px-2 py-1 rounded-2xl font-bold text-l bg-blue-900 text-white !opacity-100 dark:!opacity-100 dark:!text-white dark:![filter:brightness(1.2)] transition shadow-xl"
           >
-            💬 socraticbot
+            💬socratic
           </Link>
 
 
@@ -233,20 +235,16 @@ export default function ArticleCard({
               </button>
             </div>
 
-            {/* Toolbar */}
-            <div className="flex items-center justify-between px-6 py-3 border-b bg-gray-50">
-              <div className="flex items-center gap-4">
+          {/* Toolbar */}
+            <div className="flex items-center justify-between px-6 py-3 border-b bg-gray-50 dark:bg-slate-800 dark:border-slate-700">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowAbstract(!showAbstract)}
-                  className={`text-sm px-3 py-1 rounded-lg transition ${
-                    showAbstract
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
+                  className="text-sm px-4 py-2 rounded-lg transition bg-blue-600 dark:bg-blue-600 text-white dark:text-white hover:bg-gray-300 dark:hover:bg-slate-600 font-medium"
                 >
                   {showAbstract ? "Hide Abstract" : "Show Abstract"}
                 </button>
-              </div>
+                
                 <ExportButton
                   type="abstract"
                   data={{
@@ -256,26 +254,27 @@ export default function ArticleCard({
                   }}
                   label="Export Abstract"
                 />
+              </div>
+              
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Font Size:</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Font Size:</span>
                 <button
                   onClick={decreaseFontSize}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-lg transition"
+                  className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg transition border border-gray-200 dark:border-slate-600"
                 >
                   A-
                 </button>
-                <span className="text-sm font-mono w-12 text-center">
+                <span className="text-sm font-mono w-12 text-center text-gray-700 dark:text-gray-300">
                   {fontSize}px
                 </span>
                 <button
                   onClick={increaseFontSize}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-lg transition"
+                  className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg transition border border-gray-200 dark:border-slate-600"
                 >
                   A+
                 </button>
               </div>
             </div>
-
             {/* Content */}
             <div className="flex-1 overflow-auto p-6 bg-gray-50">
               <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8 space-y-6">

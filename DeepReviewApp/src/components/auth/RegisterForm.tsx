@@ -120,10 +120,10 @@ export default function RegisterForm() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+    <div className="w-full max-w-md mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 shadow-2xl">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-        <p className="text-gray-400 text-sm">Join DeepReview today</p>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Create Account</h1>
+        <p className="text-slate-600 dark:text-gray-400 text-sm">Join DeepReview today</p>
       </div>
 
       {error && (
@@ -190,18 +190,18 @@ export default function RegisterForm() {
         />
 
         {/* ✅ CAPTCHA */}
-        <div className="border border-slate-800 rounded-xl p-4 bg-slate-950/40">
+        <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-slate-50 dark:bg-slate-950/40">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-300">
+            <p className="text-sm text-slate-700 dark:text-gray-300">
               CAPTCHA:{" "}
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-slate-900 dark:text-white">
                 {captchaQuestion || "Loading..."}
               </span>
             </p>
             <button
               type="button"
               onClick={loadCaptcha}
-              className="text-xs text-blue-400 hover:text-blue-300"
+              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
               disabled={loading}
             >
               Refresh
@@ -212,9 +212,9 @@ export default function RegisterForm() {
             value={captchaAnswer}
             onChange={(e) => setCaptchaAnswer(e.target.value)}
             placeholder="Your answer"
-            className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-slate-500 dark:text-gray-500 mt-2">
             This helps prevent bots from creating accounts.
           </p>
         </div>
@@ -223,7 +223,7 @@ export default function RegisterForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition shadow-lg"
+          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition shadow-lg"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -251,24 +251,24 @@ export default function RegisterForm() {
       </form>
 
       {/* Login Link */}
-        <div className="mt-6 text-center text-sm text-gray-400">
-          Already have an account?{" "}
-            <a href="/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
-              Sign in
-           </a>
-          </div>
+      <div className="mt-6 text-center text-sm text-slate-600 dark:text-gray-400">
+        Already have an account?{" "}
+        <a href="/auth/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+          Sign in
+        </a>
+      </div>
 
-            {/* 🔙 Back to Home */}
-          <div className="mt-4 text-center">
-            <a
-              href="/"
-              className="inline-block px-5 py-2 rounded-xl border border-slate-700
-                        text-gray-300 hover:text-white hover:border-blue-500
-                        transition"
-            >
-              ← Back to Home
-            </a>
-          </div>
+      {/* 🔙 Back to Home */}
+      <div className="mt-4 text-center">
+        <a
+          href="/"
+          className="inline-block px-5 py-2 rounded-xl border border-slate-200 dark:border-slate-700
+                    text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white hover:border-blue-500
+                    transition"
+        >
+          ← Back to Home
+        </a>
+      </div>
     </div>
   );
 }

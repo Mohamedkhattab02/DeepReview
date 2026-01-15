@@ -343,11 +343,11 @@ export default function ChatInterfaceSocratic({
                 Difficulty level will be adjusted based on <span className="font-semibold text-slate-800">your answers</span>
               </p>
               <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-slate-50 px-4 py-3 rounded-xl border border-slate-200">
+                <div className="bg-white px-4 py-3 rounded-xl border border-slate-200">
                   <span className="text-2xl mb-1 block">🎯</span>
                   <span className="text-slate-700 font-medium">Difficulty Level</span>
                 </div>
-                <div className="bg-slate-50 px-4 py-3 rounded-xl border border-slate-200">
+                <div className="bg-white px-4 py-3 rounded-xl border border-slate-200">
                   <span className="text-2xl mb-1 block">💡</span>
                   <span className="text-slate-700 font-medium">Immediate Feedback</span>
                 </div>
@@ -438,10 +438,10 @@ export default function ChatInterfaceSocratic({
             <div className="max-w-[75%] rounded-2xl px-6 py-4 shadow-lg bg-white border border-slate-200">
               <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-200">
                 <span className="text-xs font-semibold text-slate-600">
-                  שאלה {Math.min(questionIndex, 5)}
+                  question {Math.min(questionIndex, 5)}
                 </span>
-                <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-1 rounded-full font-semibold">
-                  רמת קושי {currentLevel}/5
+                <span className="text-[10px] bg-white text-slate-700 px-2 py-1 rounded-full font-semibold">
+                   level {currentLevel}/5
                 </span>
               </div>
               <p className="text-slate-700 leading-relaxed">{currentQuestion}</p>

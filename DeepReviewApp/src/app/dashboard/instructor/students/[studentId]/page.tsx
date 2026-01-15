@@ -28,8 +28,8 @@ export default async function StudentDetailPage({
       <div>
         <Link
           href="/dashboard/instructor/students"
-          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-        >
+          className="text-white hover:text-white dark:text-white dark:hover:text-white text-lg font-semibold bg-red-900 px-6 py-3 rounded-xl transition hover:bg-red-800 shadow-md">
+        
           ← Back to Students
         </Link>
         <h1 className="text-3xl font-bold text-gray-900 mt-4">

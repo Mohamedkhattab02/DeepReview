@@ -173,7 +173,7 @@ export default function ChatInterface({
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)] bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 rounded-2xl shadow-2xl border border-slate-200/60 overflow-hidden">
       {/* 🎯 Header */}
-      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-6 py-5 shadow-lg">
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-600 to-purple-100 text-white px-6 py-5 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="bg-white/20 backdrop-blur-sm p-2 rounded-xl">
             <BookOpen className="w-6 h-6" />
@@ -208,7 +208,7 @@ export default function ChatInterface({
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div className="bg-gradient-to-br from-blue-100 to-purple-100 p-8 rounded-3xl shadow-lg max-w-md">
+            <div className="bg-gradient-to-br from-blue-900 to-purple-100 p-8 rounded-3xl shadow-lg max-w-md">
               <Sparkles className="w-16 h-16 text-indigo-600 mx-auto mb-4 animate-bounce" />
               <h3 className="text-2xl font-bold text-slate-800 mb-3">
                 👋 hello! I'm your academic assistant.
@@ -218,11 +218,11 @@ export default function ChatInterface({
                 and I'll explain it in a <span className="font-semibold text-purple-600">clear and professional</span> way 🚀
               </p>
               <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-white/70 backdrop-blur-sm px-4 py-3 rounded-xl shadow-sm">
+                <div className="bg-white backdrop-blur-sm px-4 py-3 rounded-xl shadow-sm">
                   <span className="text-2xl mb-1 block">🔍</span>
                   <span className="text-slate-700 font-medium">Deep Analysis</span>
                 </div>
-                <div className="bg-white/70 backdrop-blur-sm px-4 py-3 rounded-xl shadow-sm">
+                <div className="bg-white backdrop-blur-sm px-4 py-3 rounded-xl shadow-sm">
                   <span className="text-2xl mb-1 block">💡</span>
                   <span className="text-slate-700 font-medium">Simple Explanations</span>
                 </div>
@@ -393,7 +393,7 @@ export default function ChatInterface({
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isLoading}
-            className="flex-shrink-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200 flex items-center gap-3 group"
+            className="flex-shrink-0 bg-gradient-to-r from-indigo-900 to-purple-900 text-white px-8 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200 flex items-center gap-3 group"
           >
             {isLoading ? (
               <>

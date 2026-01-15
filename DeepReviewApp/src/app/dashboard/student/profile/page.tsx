@@ -29,19 +29,27 @@ export default async function ProfilePage() {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* Header with Avatar */}
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 h-32"></div>
-          <div className="px-6 pb-6">
-            <div className="flex items-end -mt-16 mb-6">
-              <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center text-4xl font-bold text-purple-600 shadow-lg border-4 border-white">
-                {userData?.full_name?.charAt(0)?.toUpperCase() ?? "U"}
-              </div>
-              <div className="mr-6 mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">{userData?.full_name}</h2>
-                <p className="text-gray-600 capitalize">{userData?.role}</p>
-              </div>
-            </div>
+<div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+
+  <div className="px-6 pt-8 pb-6">
+    <div className="mb-6 flex items-center gap-6">
+
+      {/* Avatar */}
+      <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-500 text-4xl font-bold text-white shadow-lg">
+        {userData?.full_name?.charAt(0)?.toUpperCase() ?? "U"}
+      </div>
+
+      {/* Name + Role */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {userData?.full_name}
+        </h2>
+        <p className="capitalize text-gray-600 dark:text-slate-300">
+          {userData?.role}
+        </p>
+      </div>
+
+    </div>
 
             {/* Profile Info */}
             <div className="space-y-6">

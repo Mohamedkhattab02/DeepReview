@@ -282,14 +282,14 @@ export default function StudentDetailView({
         {selectedSession && (
           <div className="space-y-6">
             {/* Article Info */}
-            <div className="bg-gradient-to-r from-blue-400 to-purple-300 rounded-lg p-4">
-              <h4 className="font-bold text-gray-900 mb-2">
+            <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-4">
+              <h4 className="font-bold text-white mb-2">
                 {selectedSession.articles?.title || "Unknown Article"}
               </h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-white">
                 {selectedSession.articles?.authors.join(", ") || "Unknown Authors"}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-white mt-2">
                 Completed:{" "}
                 {new Date(selectedSession.created_at).toLocaleDateString("en-US", {
                   year: "numeric",
@@ -338,10 +338,10 @@ export default function StudentDetailView({
                 {selectedSession.question_scores.map((score, i) => (
                   <div
                     key={i}
-                    className="bg-gradient-to-br from-purple-300 to-blue-300 rounded-lg p-4 text-center border-2 border-gray-200"
+                    className="bg-gradient-to-br from-purple-900 to-blue-900 rounded-lg p-4 text-center border-2 border-gray-200"
                   >
-                    <div className="text-2xl font-bold text-gray-900">{score}</div>
-                    <div className="text-xs text-gray-500 mt-1">Question {i + 1}</div>
+                    <div className="text-2xl font-bold text-white">{score}</div>
+                    <div className="text-xs text-white mt-1">Question {i + 1}</div>
                   </div>
                 ))}
               </div>

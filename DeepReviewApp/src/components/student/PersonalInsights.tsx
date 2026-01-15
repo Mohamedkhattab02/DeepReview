@@ -61,8 +61,8 @@ export default function PersonalInsights({ progressRecords }: PersonalInsightsPr
   return (
     <div className="space-y-6">
       {/* Overall Insights */}
-      <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-6 border-2 border-purple-300">
-        <h3 className="text-xl font-bold text-purple-900 mb-4 flex items-center gap-2">
+      <div className="bg-white rounded-xl p-6 border-2 border-purple-300">
+        <h3 className="text-xl font-bold text-black mb-4 flex items-center gap-2">
           <Award className="text-purple-600" size={24} />
          Personal insights
         </h3>

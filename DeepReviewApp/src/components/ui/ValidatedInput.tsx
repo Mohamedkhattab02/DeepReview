@@ -51,10 +51,11 @@ export default function ValidatedInput({
     <div>
       <label
         htmlFor={name}
-        className="block text-sm font-medium text-gray-300 mb-2"
+        className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2"
       >
         {label}
       </label>
+
       <div className="relative">
         <input
           {...props}
@@ -62,17 +63,21 @@ export default function ValidatedInput({
           name={name}
           onChange={handleChange}
           onBlur={handleBlur}
-          className={`w-full bg-slate-800 border rounded-xl px-4 py-3 pr-12 text-white placeholder-gray-500 outline-none transition
+          className={`w-full rounded-xl px-4 py-3 pr-12 outline-none transition
+            bg-white dark:bg-slate-800
+            text-slate-900 dark:text-white
+            placeholder-slate-500 dark:placeholder-slate-400
+            border
             ${
               displayError
                 ? "border-red-500 ring-2 ring-red-500/20"
                 : isValid
                 ? "border-green-500 ring-2 ring-green-500/20"
-                : "border-slate-700 focus:ring-2 focus:ring-blue-500/50"
+                : "border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
             }`}
         />
 
-        {/* Success/Error Icon */}
+        {/* Success Icon */}
         {showValidIcon && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <svg
@@ -91,6 +96,7 @@ export default function ValidatedInput({
           </div>
         )}
 
+        {/* Error Icon */}
         {displayError && touched && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <svg
@@ -112,7 +118,7 @@ export default function ValidatedInput({
 
       {/* Error Message */}
       {displayError && touched && (
-        <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
           <span>⚠</span> {displayError}
         </p>
       )}

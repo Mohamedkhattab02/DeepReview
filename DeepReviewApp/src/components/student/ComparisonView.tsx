@@ -139,7 +139,7 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
   const exportData = getComparisonData();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -279,7 +279,7 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
 
             {/* Details Comparison */}
             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-              <div className="bg-gradient-to-r from-gray-50 to-slate-50 px-8 py-6 border-b border-gray-200">
+              <div className="bg-slate-100 dark:bg-slate-900 px-8 py-6 border-b border-gray-200">
                 <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                   <FileText className="w-6 h-6 text-gray-600" />
                   Article Details
@@ -352,10 +352,10 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                 </div>
 
                 {topicsComp.shared.length > 0 ? (
-                  <div className="mb-8 p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200">
+                  <div className="mb-8 p-6 bg-gradient-to-br from-emerald-900 to-teal-50 rounded-2xl border border-emerald-200">
                     <div className="flex items-center gap-2 mb-4">
-                      <Check className="w-5 h-5 text-emerald-600" />
-                      <h3 className="text-lg font-bold text-emerald-800">
+                      <Check className="w-5 h-5 text-white" />
+                      <h3 className="text-lg font-bold text-white">
                         Shared Topics ({topicsComp.shared.length})
                       </h3>
                     </div>
@@ -386,9 +386,9 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Unique to Article 1 */}
-                  <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
-                    <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center text-white text-xs">
+                  <div className="p-6 bg-gradient-to-br from-blue-900 to-indigo-50 rounded-2xl border border-blue-200">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-blue-400 flex items-center justify-center text-white text-xs">
                         1
                       </div>
                       Unique Topics ({topicsComp.unique1.length})
@@ -412,9 +412,9 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                   </div>
 
                   {/* Unique to Article 2 */}
-                  <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-200">
-                    <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-purple-500 flex items-center justify-center text-white text-xs">
+                  <div className="p-6 bg-gradient-to-br from-purple-900 to-pink-50 rounded-2xl border border-purple-200">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-purple-400 flex items-center justify-center text-white text-xs">
                         2
                       </div>
                       Unique Topics ({topicsComp.unique2.length})
@@ -449,10 +449,10 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                 </div>
 
                 {keywordsComp.shared.length > 0 ? (
-                  <div className="mb-8 p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200">
+                  <div className="mb-8 p-6 bg-gradient-to-br from-emerald-900 to-teal-50 rounded-2xl border border-emerald-200">
                     <div className="flex items-center gap-2 mb-4">
-                      <Check className="w-5 h-5 text-emerald-600" />
-                      <h3 className="text-lg font-bold text-emerald-800">
+                      <Check className="w-5 h-5 text-white" />
+                      <h3 className="text-lg font-bold text-white">
                         Shared Keywords ({keywordsComp.shared.length})
                       </h3>
                     </div>
@@ -483,9 +483,9 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Unique to Article 1 */}
-                  <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
-                    <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center text-white text-xs">
+                  <div className="p-6 bg-gradient-to-br from-blue-900 to-indigo-50 rounded-2xl border border-blue-200">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-blue-400 flex items-center justify-center text-white text-xs">
                         1
                       </div>
                       Unique Keywords ({keywordsComp.unique1.length})
@@ -509,9 +509,9 @@ export default function ComparisonView({ articles }: ComparisonViewProps) {
                   </div>
 
                   {/* Unique to Article 2 */}
-                  <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-200">
-                    <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-purple-500 flex items-center justify-center text-white text-xs">
+                  <div className="p-6 bg-gradient-to-br from-purple-900 to-pink-50 rounded-2xl border border-purple-200">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-purple-400 flex items-center justify-center text-white text-xs">
                         2
                       </div>
                       Unique Keywords ({keywordsComp.unique2.length})

@@ -74,7 +74,7 @@ export default function MyLibraryPage() {
         </div>
         <Link
           href="/dashboard/student/upload"
-          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all font-bold shadow-lg flex items-center gap-2"
+        className="px-10 py-5 rounded-2xl font-bold text-l bg-gradient-to-r from-blue-600 to-purple-600 text-white !opacity-100 dark:!opacity-100 dark:!text-white dark:![filter:brightness(1.2)] transition shadow-xl"
         >
           ➕ Upload New Article
         </Link>

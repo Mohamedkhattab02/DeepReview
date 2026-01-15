@@ -73,7 +73,7 @@ return (
             </Link>
             <Link
               href="/auth/register"
-              className="px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl transition font-bold shadow-lg"
+              className="px-5 py-2 rounded-2xl font-bold text-l bg-gradient-to-r from-blue-600 to-purple-600 text-white !opacity-100 dark:!opacity-100 dark:!text-white dark:![filter:brightness(1.2)] transition shadow-xl"
             >
               Register
             </Link>
@@ -109,7 +109,7 @@ return (
           <div className="flex items-center justify-center gap-4">
             <Link
               href="/auth/register"
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-bold text-lg transition shadow-xl"
+              className="px-10 py-5 rounded-2xl font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white !opacity-100 dark:!opacity-100 dark:!text-white dark:![filter:brightness(1.2)] transition shadow-xl"
             >
               Get Started Free
             </Link>

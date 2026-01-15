@@ -80,7 +80,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-6 py-2 bg-blue-900 text-white rounded-lg hover:bg-purple-100 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {loading ? (
             <>
@@ -100,18 +100,11 @@ export default function ProfileForm({ user }: ProfileFormProps) {
           )}
         </button>
 
-        <button
-          type="button"
-          onClick={() => setFullName(user?.full_name || "")}
-          className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-        >
-          Cancel
-        </button>
         {/* Back Button */}
           <button
             type="button"
             onClick={() => window.history.back()}
-            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+            className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-300 transition"
           >
             Back
           </button>

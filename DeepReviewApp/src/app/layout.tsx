@@ -1,7 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider } from "@/components/student/ThemeProvider";
+import { ThemeProvider } from "@/components/shared/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "DeepReview - Academic Research Assistant",

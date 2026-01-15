@@ -54,8 +54,8 @@ export default function ArticleManager({ articles }: ArticleManagerProps) {
       {/* Back Button */}
         <a
           href="/dashboard/instructor"
-          className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition"
-        >
+        className="text-white hover:text-white dark:text-white dark:hover:text-white text-lg font-semibold bg-red-900 px-6 py-3 rounded-xl transition hover:bg-red-800 shadow-md">
+        
           ← Back to Dashboard
         </a>
 

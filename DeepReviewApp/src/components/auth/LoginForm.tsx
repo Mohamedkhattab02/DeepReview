@@ -53,10 +53,10 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+    <div className="w-full max-w-md mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 shadow-2xl">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-        <p className="text-gray-400 text-sm">Sign in to your account</p>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Welcome Back</h1>
+        <p className="text-slate-600 dark:text-gray-400 text-sm">Sign in to your account</p>
       </div>
 
       {error && (
@@ -109,7 +109,7 @@ export default function LoginForm() {
         <div className="flex justify-end">
           <a
             href="/auth/forgot-password"
-            className="text-sm text-blue-400 hover:text-blue-300 transition"
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition"
           >
             Forgot password?
           </a>
@@ -119,7 +119,7 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition shadow-lg hover:shadow-blue-500/20"
+          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition shadow-lg hover:shadow-blue-500/20"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -151,13 +151,25 @@ export default function LoginForm() {
       </form>
 
       {/* Register Link */}
-      <div className="mt-6 text-center text-sm text-gray-400">
+      <div className="mt-6 text-center text-sm text-slate-600 dark:text-gray-400">
         Don't have an account?{" "}
         <a
           href="/auth/register"
-          className="text-blue-400 hover:text-blue-300 font-medium transition"
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition"
         >
           Sign up
+        </a>
+      </div>
+
+      {/* 🔙 Back to Home */}
+      <div className="mt-4 text-center">
+        <a
+          href="/"
+          className="inline-block px-5 py-2 rounded-xl border border-slate-200 dark:border-slate-700
+                    text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white hover:border-blue-500
+                    transition"
+        >
+          ← Back to Home
         </a>
       </div>
     </div>
