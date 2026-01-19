@@ -323,7 +323,7 @@ export default function ChatInterface({
 
               {message.role === "user" && (
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg ml-3 ring-4 ring-blue-100">
-                  <span className="text-white font-bold text-sm">אתה</span>
+                  <span className="text-white font-bold text-sm">You</span>
                 </div>
               )}
             </div>
