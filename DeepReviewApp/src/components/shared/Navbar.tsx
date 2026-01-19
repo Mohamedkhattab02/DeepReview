@@ -33,7 +33,7 @@ export default function Navbar({ user }: NavbarProps) {
         <div className="flex items-center">
           {/* Logo */}
           <Link
-            href={user.role === "student" ? "/student" : "/instructor"}
+            href={user.role === "student" ? "/dashboard/student/mylibrary" : "/dashboard/instructor"}
             className="flex items-center gap-3"
           >
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-xl">
