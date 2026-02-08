@@ -1,4 +1,10 @@
 //compare/page.tsx
+/**
+ * Article comparison page.
+ * Ensures the user is authenticated, then fetches all analyzed articles for that user.
+ * Renders the ComparisonView to enable side-by-side comparison of completed articles.
+ */
+
 import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import ComparisonView from "@/components/student/ComparisonView";

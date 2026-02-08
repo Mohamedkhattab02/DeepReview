@@ -1,4 +1,10 @@
 // app/dashboard/student/profile/page.tsx
+/**
+ * Student profile page.
+ * Requires authentication, then loads the full user record from the database.
+ * Displays account info and renders ProfileForm for editing personal details.
+ */
+
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase-server";
 import ProfileForm from "@/components/student/ProfileForm";

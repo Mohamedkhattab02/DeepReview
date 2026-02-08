@@ -1,3 +1,9 @@
+/**
+ * Upload API route for PDF articles.
+ * Authenticates the user, extracts text/pages from the PDF, uploads the file to Supabase Storage, and creates an article record.
+ * Optionally triggers background analysis for the uploaded article via the /api/analyze endpoint.
+ */
+
 import { createClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import { createRequire } from "module";
@@ -49,8 +55,8 @@ export async function POST(request: NextRequest) {
       pageCount = 0;
     }
 
-    // ✅ Make sure this bucket exists in Supabase Storage
-    const bucketName = "articles"; // change if your bucket name is different
+    // ✅ bucket "articles" exists in Supabase Storage
+    const bucketName = "articles"; 
     const filePath = `${user.id}/${Date.now()}_${file.name}`;
 
     const { error: uploadError } = await supabase.storage

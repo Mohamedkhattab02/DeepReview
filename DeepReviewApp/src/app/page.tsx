@@ -1,4 +1,10 @@
 // app/page.tsx
+/**
+ * Public landing page for DeepReview.
+ * Presents the product value, features, and workflow, with navigation to login and registration.
+ * Serves as the main marketing and entry point for new users.
+ */
+
 "use client";
 
 import Link from "next/link";

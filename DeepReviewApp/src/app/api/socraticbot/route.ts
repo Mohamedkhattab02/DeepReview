@@ -1,4 +1,11 @@
 // src/app/api/socraticbot/route.ts
+
+/**
+ * Socratic learning API route for guided, 5-step article understanding.
+ * Generates adaptive questions, grades student answers, and stores session progress + final feedback in Supabase.
+ * Includes retry handling for rate limits and ensures all scores/questions are persisted to avoid losing results.
+ */
+
 import { createClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";

@@ -1,4 +1,9 @@
 // app/api/analyze/route.ts
+/**
+ * API route that analyzes an academic article using Gemini AI.
+ * It extracts structured metadata (title, authors, abstract, keywords, topics) from the article text.
+ * The extracted analysis is saved back into the database and returned as a JSON response.
+ */
 import { createClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";

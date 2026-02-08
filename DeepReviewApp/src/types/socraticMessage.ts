@@ -18,5 +18,5 @@ export interface SocraticMessage {
   is_completed: boolean;
 
   created_at: string;
-  updated_at?: string; // אם הוספת עמודה
+  updated_at?: string;
 }

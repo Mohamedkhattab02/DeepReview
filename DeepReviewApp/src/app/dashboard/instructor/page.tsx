@@ -1,4 +1,10 @@
 // src/app/(dashboard)/instructor/page.tsx
+/**
+ * Instructor dashboard page.
+ * Displays high-level statistics about students, articles, and learning sessions.
+ * Provides quick navigation to student management, analytics, and article administration.
+ */
+
 import { getInstructorStats } from "@/actions/instructor";
 import Link from "next/link";
 

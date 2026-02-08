@@ -1,4 +1,10 @@
 // app/(dashboard)/student/page.tsx
+/**
+ * Student dashboard main page.
+ * Fetches and displays the student's learning data, including articles, messages, and progress records.
+ * Provides tab-based views for overview stats, article activity, and detailed progress analytics.
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";

@@ -138,8 +138,6 @@ export async function getArticleReadPayload(
 
   if (!user) return null;
 
-  // ⚠️ תעדכן את שמות העמודות לפי מה שיש אצלך בטבלה
-  // לדוגמה: אם אין content/full_text/extracted_text - תחליף לשם הנכון.
   const { data, error } = await supabase
     .from("articles")
     .select("id, title, abstract, full_text, keywords , main_topics")

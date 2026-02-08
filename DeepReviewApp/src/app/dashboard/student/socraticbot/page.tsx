@@ -1,7 +1,12 @@
+/**
+ * Socratic chat page for students.
+ * Serves as a client-side entry point that renders the ChatInterfaceSocratic component.
+ * Initializes the Socratic session context for guided, question-based learning.
+ */
+
 "use client";
 
 import ChatInterfaceSocratic from "@/components/student/ChatInterfacesocratic";
-//import ChatInterfaceSocratic from "@/components/student/ChatInterfaceSocratic";
 
 import { SocraticMessage } from "@/types/socraticMessage";
 

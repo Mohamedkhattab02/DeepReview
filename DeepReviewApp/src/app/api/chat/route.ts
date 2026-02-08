@@ -1,3 +1,9 @@
+/**
+ * Chat API route for academic Q&A based on a specific article.
+ * Authenticates the user, loads the article from the database, and answers questions using Gemini AI.
+ * Responses are strictly grounded in the article text and optimized for clear, student-friendly explanations.
+ */
+
 import { createClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";

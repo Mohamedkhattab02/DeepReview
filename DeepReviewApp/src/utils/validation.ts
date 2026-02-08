@@ -1,4 +1,15 @@
 // src/utils/validation.ts
+/**
+ * Validation utilities for authentication and user management.
+ *
+ * 1. Centralizes all form validation logic (login, register, profile) in one place.
+ * 2. Uses Zod schemas to enforce strict, type-safe validation rules.
+ * 3. Provides password strength evaluation for better UX feedback.
+ * 4. Ensures consistent error messages across the application.
+ * 5. Supports safe parsing with structured, field-level error reporting.
+ * 6. Enables automatic TypeScript type inference from validation schemas.
+ */
+
 import { z } from "zod";
 
 /**

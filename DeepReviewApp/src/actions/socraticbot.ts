@@ -86,7 +86,6 @@ export async function createSocraticSession(
       questions_asked: "[]",
       questions_answered: "[]",
       is_completed: false,
-      // ❌ אין updated_at בטבלה שלך -> לא לשים!
     })
     .select()
     .single();
@@ -96,7 +95,6 @@ export async function createSocraticSession(
     return null;
   }
 
-  // ⚠️ אל תעשה revalidatePath כאן אם זה נקרא בזמן render (כבר היה לך digest error)
   return data as SocraticMessage;
 }
 
@@ -122,7 +120,6 @@ export async function updateSocraticSession(
     questions_answered_count: ansArr.length,
     current_level: newLevel,
     is_completed: isCompleted,
-    // ❌ אין updated_at בטבלה שלך -> לא לשים!
   };
 
   const { error } = await supabase
@@ -136,7 +133,6 @@ export async function updateSocraticSession(
     return false;
   }
 
-  // ✅ מותר לעשות revalidate רק אחרי mutation אמיתי (וזה נקרא בדרך כלל אחרי סיום)
   revalidatePath(`/dashboard/student/socraticbot`);
   return true;
 }
@@ -185,7 +181,6 @@ export async function insertStudentProgressRow(payload: {
     weaknesses: safeStringify(payload.weaknesses ?? []),
     recommendations: safeStringify(payload.recommendations ?? []),
 
-    // created_at / updated_at יש להם default בטבלה -> לא חייבים לשלוח
   };
 
   const { error } = await supabase.from("student_progress").insert(row);

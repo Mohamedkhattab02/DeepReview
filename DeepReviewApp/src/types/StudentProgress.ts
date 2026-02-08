@@ -8,7 +8,6 @@ export interface StudentProgress {
 
   final_average_score: number | null;
 
-  // DB stores these as TEXT (JSON string) אבל בקוד נוח לעבוד כמערכים
   question_scores: number[];
   difficulty_path: number[];
 

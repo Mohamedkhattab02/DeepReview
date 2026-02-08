@@ -1,4 +1,10 @@
 // app/(dashboard)/student/mylibrary/page.tsx
+/**
+ * Student "My Library" page.
+ * Loads and displays the user's uploaded articles, showing analysis status and basic stats.
+ * Auto-refreshes while articles are still being analyzed and allows navigation to upload/delete actions.
+ */
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
